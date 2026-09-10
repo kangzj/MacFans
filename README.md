@@ -1,63 +1,126 @@
-# MacFans
+<p align="center">
+  <img src="App/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" width="128" alt="MacFans icon">
+</p>
 
-A native macOS app that shows what is running hot and lets you decide how hard the fans work.
+<h1 align="center">MacFans</h1>
 
-![Overview](docs/screenshots/overview.png)
+<p align="center">
+  <strong>Fan control and temperature monitoring for Apple Silicon Macs, done the native way.</strong><br>
+  See what is running hot, watch the fans in real time, and decide how hard they work.
+</p>
 
-## What it does
+<p align="center">
+  <a href="https://github.com/kangzj/MacFans/releases/latest"><img src="https://img.shields.io/github/v/release/kangzj/MacFans?label=download&color=1e7bef" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/macOS-15%2B-000?logo=apple" alt="macOS 15 or later">
+  <img src="https://img.shields.io/badge/Apple%20Silicon-M1%20%E2%80%93%20M5-000?logo=apple" alt="Apple Silicon">
+  <img src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white" alt="Swift 6">
+  <img src="https://img.shields.io/badge/SwiftUI-native-0A84FF" alt="SwiftUI">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license"></a>
+</p>
 
-- Reads temperatures straight from the System Management Controller and groups them into the readings that matter: CPU, GPU, memory, SSD, battery, and SoC.
-  Every raw sensor is still one toggle away.
-- Shows both fans with live RPM, target, and the range the hardware allows.
-- Three control modes:
-  - **Auto** hands the fans to macOS. This is the default and the state MacFans always falls back to.
-  - **Constant** holds a fixed speed per fan, or moves both together.
-  - **Custom** follows a profile of rules such as "when the GPU is above 85 °C, run all fans at 70% until it drops below 75 °C".
-    Quiet, Balanced, and Cool profiles are built in and can be duplicated and tuned.
-- Lives in the menu bar with a live readout and a one-click "full blast for five minutes".
-- Keeps a 30 minute history of temperatures and RPM.
+<p align="center">
+  <img src="docs/screenshots/overview.png" width="760" alt="MacFans overview showing the temperature gauge and both fans">
+</p>
 
-## Screenshots
+## Why MacFans
 
-| Menu bar | Sensors |
+Apple's fan curve is tuned for silence, not for sustained load.
+When you render, compile, train, or game, the chip heats up before the fans catch up.
+MacFans gives you the dial back: keep the machine cooler under load, keep it quieter when it does not matter, and always know what is going on inside.
+
+- **Made for Apple Silicon.** Reads temperatures straight from the System Management Controller and understands the sensor layout of M1 through M5, including M5 quirks.
+- **Native, not ported.** SwiftUI, menu bar extra, Swift Charts, dark and light mode, keyboard shortcuts. It feels like part of macOS.
+- **Safe by design.** A tiny root helper is the only thing that touches the fans, it clamps every request to the hardware range, and a watchdog returns the fans to Apple's control if the app ever goes away.
+- **Free and open source.** MIT licensed, no telemetry, no account.
+
+## Features
+
+### At a glance
+The Overview answers three questions: is my Mac hot, what are the fans doing, and which mode am I in.
+A colour-coded gauge shows the hottest of CPU and GPU with a plain-language status, next to SSD and battery readings.
+Both fans show live RPM and their current target.
+Thirty-minute trends are one click away.
+
+### Three ways to run the fans
+| Mode | What it does |
 |---|---|
-| ![Menu bar](docs/screenshots/menu-bar.png) | ![Sensors](docs/screenshots/sensors.png) |
+| **Auto** | macOS drives the fans. The default, and the state MacFans always returns to. |
+| **Constant** | Hold a fixed speed, per fan or both together. Handy for a long render or a hot room. |
+| **Custom** | Follow a profile of rules such as *when the GPU is above 85 °C, run all fans at 70 % until it drops below 75 °C*. |
 
-| Fans | Profiles |
-|---|---|
-| ![Fans](docs/screenshots/fans.png) | ![Profiles](docs/screenshots/profiles.png) |
+### Profiles that speak your language
+Quiet, Balanced, and Cool ship built in.
+Edit them in place, or build your own from rules that trigger on a sensor group (hottest or average), a single sensor, or a threshold with hysteresis so fans do not flap.
+Reset a built-in profile to its defaults at any time.
 
-| History |
-|---|
-| ![History](docs/screenshots/history.png) |
+### Full Blast
+One click in the toolbar or menu bar runs every fan at maximum for a set time (1 minute by default, up to 30), then hands control back to whatever mode was active.
 
-## Safety
+### Menu bar
+A live readout next to the fan icon: GPU by default, or CPU, memory, SSD, battery, the hottest sensor, a favourite sensor, or fan RPM.
+The dropdown shows key temperatures, both fans, and the mode switch without opening the window.
 
-Fan writes never happen in the app.
-A small root daemon, installed through `SMAppService` and approved once in System Settings › Login Items, is the only component that touches the fan keys.
-It clamps every request to the fan's hardware minimum and maximum, returns every fan to Auto if the app stops sending heartbeats for ten seconds, and restores Auto when it is stopped.
-The app itself restores Auto on quit, on sleep, and whenever the helper reports an error.
+### Sensors, all of them
+The summary view groups hundreds of raw SMC keys into readings that make sense.
+Flip a toggle to see every sensor, rename them, star favourites, and search.
 
-## Building
+<p align="center">
+  <img src="docs/screenshots/sensors.png" width="720" alt="Sensor summary view">
+</p>
 
-Requirements: macOS 15 or later, Xcode 26 with the license accepted, and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+<p align="center">
+  <img src="docs/screenshots/profiles.png" width="720" alt="Profile rule editor">
+</p>
+
+## Safety model
+
+Changing fan speed needs root, and root code deserves scrutiny.
+MacFans keeps that surface as small as possible.
+
+- The app itself never writes to the SMC. It only reads.
+- A separate helper daemon, registered with Apple's `SMAppService` and approved once in System Settings › Login Items, performs fan writes over XPC.
+- The helper clamps every request to the fan's own minimum and maximum.
+- If the helper receives no heartbeat from the app for ten seconds while any fan is forced, it restores Auto. This covers crashes and force quits.
+- The app restores Auto when it quits, when the Mac sleeps, and whenever the helper reports an error.
+- When signed with a Developer ID, the helper accepts connections only from apps signed by the same team.
+
+## Requirements
+
+- macOS 15 Sequoia or later. Tested on macOS 26.
+- Apple Silicon Mac with SMC-controlled fans (MacBook Pro, MacBook Air with fans, iMac, Mac mini, Mac Studio). Intel Macs show raw sensors but the names are best effort.
+
+## Install
+
+Download the latest DMG from [Releases](https://github.com/kangzj/MacFans/releases/latest), drag MacFans to Applications, and open it.
+Fan control asks you once to approve the helper in System Settings › Login Items.
+
+Release builds are currently ad-hoc signed, so macOS blocks the first launch.
+See [Opening an unsigned build](#opening-an-unsigned-build-on-another-mac) below for the two-click fix, or build from source to skip it entirely.
+
+## Build from source
+
+Requirements: Xcode 26 with the license accepted, and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
+git clone https://github.com/kangzj/MacFans.git
+cd MacFans
 scripts/build.sh            # Debug build in build/Build/Products/Debug/MacFans.app
 scripts/build.sh Release    # Release build
 ```
 
 The Xcode project is generated from `project.yml`; do not edit `MacFans.xcodeproj` by hand.
 The app icon is drawn by `scripts/render-icon.swift`; run `swift scripts/render-icon.swift App/Assets.xcassets/AppIcon.appiconset` after changing it.
-Builds are ad-hoc signed, so the helper accepts connections based on the app's bundle identifier.
-For distribution, sign both targets with a Developer ID and tighten the requirement in `Helper/HelperListener.swift`.
 
-The helper works best when the app runs from `/Applications`.
-Copy the built app there before installing the helper from Settings › Helper.
+Tests cover the SMC decoding, sensor catalog, rule engine, and persistence:
+
+```sh
+swift test --package-path Packages/MacFansKit
+MACFANS_HW_TESTS=1 swift test --package-path Packages/MacFansKit   # also exercises the real SMC
+```
 
 ## Distributing
 
-Other Macs only run the app if it is signed with a Developer ID certificate and notarized by Apple, which needs an Apple Developer Program membership.
+Other Macs only run the app without warnings if it is signed with a Developer ID certificate and notarized by Apple, which needs an Apple Developer Program membership.
 
 1. Install the "Developer ID Application" certificate in your login keychain and note the Team ID shown in parentheses in its name.
 2. Store notarization credentials once:
@@ -71,7 +134,6 @@ Other Macs only run the app if it is signed with a Developer ID certificate and 
    The result is `dist/MacFans-<version>.dmg`.
 
 Without `--identity` the script produces an ad-hoc signed DMG.
-Other Macs can still run it, but Gatekeeper blocks the first launch; see below.
 
 ### Opening an unsigned build on another Mac
 
@@ -90,21 +152,39 @@ Alternatively, clear the quarantine flag from Terminal and launch as usual:
 xattr -d com.apple.quarantine /Applications/MacFans.app
 ```
 
-Building from source with `scripts/build.sh` on the target Mac avoids the prompt entirely.
-When signed with a Developer ID, the helper automatically requires connecting apps to be signed by the same team, so only MacFans can ask it to change fan speed.
+## How it works
 
-## Tests
+- `SMCKit` talks to `AppleSMC` through IOKit: key enumeration, typed decoding, fan and temperature accessors.
+- `MacFansCore` is pure Swift: sensor catalog for Apple Silicon keys, the rule engine with hysteresis and lowering dwell, profiles, and JSON persistence. No UI, no IOKit, fully unit tested.
+- `App` is the SwiftUI app: a polling monitor, a fan controller that turns mode and rules into helper commands, and the views.
+- `Helper` is the root daemon: XPC listener, fan writer with clamping, watchdog.
 
-```sh
-swift test --package-path Packages/MacFansKit
-MACFANS_HW_TESTS=1 swift test --package-path Packages/MacFansKit   # also exercises the real SMC
-```
+The design spec and implementation plan live in `docs/superpowers`.
 
-## Layout
+## FAQ
 
-- `Packages/MacFansKit/Sources/SMCKit` talks to `AppleSMC` through IOKit.
-- `Packages/MacFansKit/Sources/MacFansCore` holds the models, the sensor catalog, the rule engine, and JSON persistence. It has no UI or IOKit dependency.
-- `App` is the SwiftUI app.
-- `Helper` is the root daemon.
-- `Shared` is the XPC protocol both sides compile.
-- `docs/superpowers` holds the design spec and implementation plan.
+**Will this damage my Mac?**
+MacFans only uses the same fan target mechanism macOS uses, never exceeds the hardware limits the SMC reports, and defaults to Apple's control at every opportunity.
+Running fans faster wears them slightly sooner; running them slower than Apple would is where you should be thoughtful, which is why Custom rules always fall back to Auto when no rule is active.
+
+**Does it work on Intel Macs?**
+It reads fans and sensors, but sensor naming is tuned for Apple Silicon.
+
+**Why does it need a helper?**
+Writing to the SMC requires root. Isolating that in a minimal daemon is safer than running the whole app as root.
+
+**Where are my settings?**
+`~/Library/Application Support/MacFans/configuration.json`.
+
+## Contributing
+
+Issues and pull requests are welcome.
+Keep changes small, add a test for pure logic, and run `scripts/build.sh` before opening a PR.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+---
+
+<sub>Keywords: macOS fan control, Apple Silicon fan control, MacBook Pro fan speed, M1 M2 M3 M4 M5 fan control, Mac temperature monitor, SMC fan control, CPU GPU temperature menu bar, macOS thermal monitor, fan curve, SwiftUI, open source alternative to Macs Fan Control, TG Pro, smcFanControl, iStat Menus.</sub>
