@@ -29,6 +29,11 @@ enum Formatters {
         "\(Int(value.rounded()))%"
     }
 
+    static func minutes(_ seconds: TimeInterval) -> String {
+        let minutes = Int((seconds / 60).rounded())
+        return minutes == 1 ? "1 min" : "\(minutes) min"
+    }
+
     static func converted(_ celsius: Double, to unit: TemperatureUnit) -> Double {
         switch unit {
         case .celsius: celsius

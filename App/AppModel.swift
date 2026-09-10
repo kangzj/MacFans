@@ -68,7 +68,7 @@ final class AppModel {
         if controller.isBoosting {
             controller.cancelBoost()
         } else {
-            controller.boost()
+            controller.boost(for: configuration.boostDuration)
         }
         Task { await tick() }
     }

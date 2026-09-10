@@ -41,6 +41,16 @@ private struct GeneralSettings: View {
                 }
             }
             Section {
+                Picker("Full blast runs for", selection: $model.configuration.boostDuration) {
+                    ForEach(AppConfiguration.boostDurationChoices, id: \.self) { duration in
+                        Text(Formatters.minutes(duration)).tag(duration)
+                    }
+                }
+                Text("Full Blast runs every fan at maximum speed, then returns to whatever mode was active.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section {
                 Toggle("Launch at login", isOn: Binding(
                     get: { SMAppService.mainApp.status == .enabled },
                     set: { setLaunchAtLogin($0) }

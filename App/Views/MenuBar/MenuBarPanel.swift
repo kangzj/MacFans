@@ -89,11 +89,11 @@ struct MenuBarPanel: View {
             Button {
                 model.toggleBoost()
             } label: {
-                Label(model.controller.isBoosting ? "Stop Full Blast" : "Full Blast for 5 Minutes", systemImage: "wind")
+                Label(model.controller.isBoosting ? "Stop Full Blast" : "Full Blast for \(Formatters.minutes(model.configuration.boostDuration))", systemImage: "wind")
                     .frame(maxWidth: .infinity)
             }
             .disabled(!model.helper.isEnabled)
-            .help(model.helper.isEnabled ? "Run every fan at maximum speed for five minutes." : "Install the helper in Settings to control fans.")
+            .help(model.helper.isEnabled ? "Run every fan at maximum speed, then return to the current mode." : "Install the helper in Settings to control fans.")
         }
     }
 

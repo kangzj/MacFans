@@ -2,6 +2,7 @@ import Foundation
 
 public struct AppConfiguration: Codable, Equatable, Sendable {
     public static let pollIntervalRange: ClosedRange<TimeInterval> = 1...10
+    public static let boostDurationChoices: [TimeInterval] = [60, 120, 300, 600, 900, 1800]
     public static let defaultConstantSpeed: FanSpeed = .percent(50)
     public static let `default` = AppConfiguration()
 
@@ -15,6 +16,7 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var menuBarReadout: MenuBarReadout = .cpu
     public var showAllSensors = false
     public var startInModeOnLaunch = false
+    public var boostDuration: TimeInterval = 300
 
     public var allProfiles: [Profile] {
         let builtInIDs = Set(Profile.builtIns.map(\.id))
@@ -59,5 +61,6 @@ extension AppConfiguration {
         menuBarReadout = try container.decodeIfPresent(MenuBarReadout.self, forKey: .menuBarReadout) ?? defaults.menuBarReadout
         showAllSensors = try container.decodeIfPresent(Bool.self, forKey: .showAllSensors) ?? defaults.showAllSensors
         startInModeOnLaunch = try container.decodeIfPresent(Bool.self, forKey: .startInModeOnLaunch) ?? defaults.startInModeOnLaunch
+        boostDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .boostDuration) ?? defaults.boostDuration
     }
 }

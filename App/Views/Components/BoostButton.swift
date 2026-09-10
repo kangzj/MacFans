@@ -7,11 +7,18 @@ struct BoostButton: View {
         Button {
             model.toggleBoost()
         } label: {
-            Label(model.controller.isBoosting ? "Stop" : "Full Blast", systemImage: "wind")
+            Label(model.controller.isBoosting ? "Stop Full Blast" : "Full Blast", systemImage: "wind")
         }
-        .labelStyle(.titleAndIcon)
+        .labelStyle(.iconOnly)
         .tint(model.controller.isBoosting ? .orange : nil)
         .disabled(!model.helper.isEnabled)
-        .help(model.controller.isBoosting ? "Stop full blast and return to the current mode." : "Run every fan at maximum speed for five minutes, then return to the current mode.")
+        .help(helpText)
+    }
+
+    private var helpText: String {
+        if model.controller.isBoosting, let until = model.controller.boostUntil {
+            return "Stop full blast (ends at \(until.formatted(date: .omitted, time: .shortened)))"
+        }
+        return "Full blast for \(Formatters.minutes(model.configuration.boostDuration)), then back to \(model.controller.mode.title)"
     }
 }

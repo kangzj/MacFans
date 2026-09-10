@@ -5,7 +5,6 @@ import Observation
 @MainActor
 @Observable
 final class FanController {
-    static let boostDuration: TimeInterval = 5 * 60
     static let heartbeatInterval: Duration = .seconds(2)
 
     private(set) var mode: ControlMode = .auto
@@ -41,8 +40,8 @@ final class FanController {
         lastEvaluation = nil
     }
 
-    func boost() {
-        boostUntil = Date().addingTimeInterval(Self.boostDuration)
+    func boost(for duration: TimeInterval) {
+        boostUntil = Date().addingTimeInterval(duration)
         lastError = nil
         invalidate()
     }
