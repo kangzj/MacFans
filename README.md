@@ -106,8 +106,8 @@ Fanwright keeps that surface as small as possible.
 Download the latest DMG from [Releases](https://github.com/kangzj/fanwright/releases/latest), drag Fanwright to Applications, and open it.
 Fan control asks you once to approve the helper in System Settings › Login Items.
 
-Release builds are currently ad-hoc signed, so macOS blocks the first launch.
-See [Opening an unsigned build](#opening-an-unsigned-build-on-another-mac) below for the two-click fix, or build from source to skip it entirely.
+Release builds are signed with an Apple Development certificate rather than a notarized Developer ID, so macOS blocks the first launch.
+See [Opening an unsigned build](#opening-an-unsigned-build-on-another-mac) below for the two-click fix.
 
 ## Build from source
 
@@ -119,6 +119,23 @@ cd Fanwright
 scripts/build.sh            # Debug build in build/Build/Products/Debug/Fanwright.app
 scripts/build.sh Release    # Release build
 ```
+
+### Building a copy that can control fans
+
+macOS only lets launchd run a privileged helper whose signature comes from an Apple-issued certificate.
+An ad-hoc ("Sign to Run Locally") build reads every sensor but shows "Unavailable in this unsigned build" under Settings › Helper, because launchd kills the helper with a launch constraint violation.
+
+A free Apple Development certificate is enough, no paid membership required:
+
+1. In Xcode, open Settings › Accounts, add your Apple ID, and select the Personal Team.
+2. Click Manage Certificates…, then + › Apple Development.
+3. Find the identity name with `security find-identity -v -p codesigning` and build with it:
+   ```sh
+   FANWRIGHT_SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)" scripts/build.sh
+   ```
+
+Keep one copy of the app on disk.
+launchd caches the helper's requirement per registration, so if you move or rebuild the app and fan control stops responding, click Settings › Helper › Reinstall.
 
 The Xcode project is generated from `project.yml`; do not edit `Fanwright.xcodeproj` by hand.
 The app icon is drawn by `scripts/render-icon.swift`; run `swift scripts/render-icon.swift App/Assets.xcassets/AppIcon.appiconset` after changing it.
@@ -145,7 +162,8 @@ Other Macs only run the app without warnings if it is signed with a Developer ID
    ```
    The result is `dist/Fanwright-<version>.dmg`.
 
-Without `--identity` the script produces an ad-hoc signed DMG.
+Pass an Apple Development identity instead of a Developer ID to get a DMG whose helper works but that is not notarized; recipients need the Open Anyway steps below.
+Without `--identity` the script produces an ad-hoc signed DMG in which fan control is unavailable.
 
 ### Opening an unsigned build on another Mac
 
