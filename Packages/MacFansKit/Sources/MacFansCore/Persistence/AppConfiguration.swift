@@ -16,7 +16,7 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var menuBarReadout: MenuBarReadout = .cpu
     public var showAllSensors = false
     public var startInModeOnLaunch = false
-    public var boostDuration: TimeInterval = 300
+    public var boostDuration: TimeInterval = 60
 
     public var allProfiles: [Profile] {
         let builtInIDs = Set(Profile.builtIns.map(\.id))
