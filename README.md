@@ -66,7 +66,27 @@ Other Macs only run the app if it is signed with a Developer ID certificate and 
    ```
    The result is `dist/MacFans-<version>.dmg`.
 
-Without `--identity` the script produces an ad-hoc signed DMG that only runs on the Mac that built it.
+Without `--identity` the script produces an ad-hoc signed DMG.
+Other Macs can still run it, but Gatekeeper blocks the first launch; see below.
+
+### Opening an unsigned build on another Mac
+
+macOS refuses to open a downloaded app that is not notarized and shows "Apple could not verify MacFans is free of malware".
+Right-click › Open no longer bypasses this on macOS 15 and later.
+To run it anyway:
+
+1. Drag MacFans to Applications and double-click it once. Dismiss the dialog.
+2. Open System Settings › Privacy & Security and scroll down to the Security section.
+3. Next to "MacFans was blocked to protect your Mac", click **Open Anyway**, then confirm with your password.
+4. Double-click MacFans again. It opens normally from now on.
+
+Alternatively, clear the quarantine flag from Terminal and launch as usual:
+
+```sh
+xattr -d com.apple.quarantine /Applications/MacFans.app
+```
+
+Building from source with `scripts/build.sh` on the target Mac avoids the prompt entirely.
 When signed with a Developer ID, the helper automatically requires connecting apps to be signed by the same team, so only MacFans can ask it to change fan speed.
 
 ## Tests
