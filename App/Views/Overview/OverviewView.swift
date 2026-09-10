@@ -84,9 +84,10 @@ struct OverviewView: View {
 
     private func activeRules(_ evaluation: RuleEvaluation) -> some View {
         let active = model.activeProfile.rules.filter { evaluation.state.activeRuleIDs.contains($0.id) }
+        let stillForced = evaluation.commands.values.contains { $0 != .auto }
         return Group {
             if active.isEmpty {
-                Text("No rule is active. Fans are on Auto.")
+                Text(stillForced ? "Rules released. Fans return to Auto in a moment." : "No rule is active. Fans are on Auto.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             } else {
@@ -122,7 +123,6 @@ struct OverviewView: View {
         .chartYAxisLabel(unit == .celsius ? "°C" : "°F")
         .chartXScale(domain: historyDomain)
         .chartXAxis { timeAxis }
-        .chartPlotStyle { $0.padding(.trailing, 24) }
         .frame(height: 160)
     }
 
@@ -137,7 +137,6 @@ struct OverviewView: View {
         .chartYAxisLabel("RPM")
         .chartXScale(domain: historyDomain)
         .chartXAxis { timeAxis }
-        .chartPlotStyle { $0.padding(.trailing, 24) }
         .frame(height: 120)
     }
 
@@ -147,9 +146,12 @@ struct OverviewView: View {
     }
 
     private var timeAxis: some AxisContent {
-        AxisMarks(values: .stride(by: .minute, count: 5)) { _ in
+        let labelCutoff = historyDomain.upperBound.addingTimeInterval(-90)
+        return AxisMarks(values: .stride(by: .minute, count: 5)) { value in
             AxisGridLine()
-            AxisValueLabel(format: .dateTime.hour().minute())
+            if let date = value.as(Date.self), date < labelCutoff {
+                AxisValueLabel(format: .dateTime.hour().minute())
+            }
         }
     }
 }
