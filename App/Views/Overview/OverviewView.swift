@@ -5,28 +5,120 @@ struct OverviewView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        Group {
+        ScrollView {
             if case .unavailable(let message) = model.monitor.availability {
                 ContentUnavailableView("Sensors Unavailable", systemImage: "thermometer.medium.slash", description: Text(message))
             } else {
-                VStack(spacing: 32) {
-                    ThermalHeadline()
-                    fanRings
-                    ModeSwitch()
-                    boostButton
+                VStack(spacing: 16) {
+                    HStack(alignment: .top, spacing: 16) {
+                        ThermalCard()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        FansCard()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    ModeCard()
                 }
-                .padding(.horizontal, 40)
-                .padding(.vertical, 24)
-                .frame(maxWidth: 560)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(20)
             }
         }
     }
+}
 
-    private var fanRings: some View {
-        HStack(spacing: 48) {
-            ForEach(model.monitor.fans) { fan in
-                FanGauge(fan: fan, diameter: 96)
+private struct ThermalCard: View {
+    @Environment(AppModel.self) private var model
+
+    private let readings: [(title: String, family: SensorFamily, symbol: String)] = [
+        ("CPU", .cpuPerformance, "cpu"),
+        ("GPU", .gpu, "rectangle.3.group"),
+        ("SSD", .ssd, "internaldrive"),
+        ("Battery", .battery, "battery.100percent"),
+    ]
+
+    private var headline: Double? {
+        [model.monitor.summary(.cpuPerformance)?.max, model.monitor.summary(.gpu)?.max].compactMap { $0 }.max()
+            ?? model.monitor.hottest?.celsius
+    }
+
+    var body: some View {
+        Card(title: "Temperature", symbol: "thermometer.medium") {
+            HStack(spacing: 28) {
+                TemperatureRing(celsius: headline)
+                VStack(spacing: 10) {
+                    ForEach(readings, id: \.family) { title, family, symbol in
+                        readingRow(title: title, symbol: symbol, celsius: model.monitor.summary(family)?.max)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.vertical, 4)
+            Spacer(minLength: 0)
+            TrendStrip(
+                title: "CPU · last 30 min",
+                samples: model.monitor.history.samples(ReadingHistory.summaryKey(.cpuPerformance)),
+                tint: TemperatureTint.color(for: headline ?? 0)
+            )
+        }
+    }
+
+    private func readingRow(title: String, symbol: String, celsius: Double?) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(width: 22)
+            Text(title)
+                .font(.callout)
+            Spacer()
+            TemperatureText(celsius: celsius, style: .title3)
+        }
+    }
+}
+
+private struct FansCard: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Card(title: "Fans", symbol: "fanblades") {
+            HStack(spacing: 24) {
+                ForEach(model.monitor.fans) { fan in
+                    FanGauge(fan: fan, diameter: 118)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.vertical, 4)
+            Spacer(minLength: 0)
+            if let first = model.monitor.fans.first {
+                TrendStrip(
+                    title: "\(first.name) · last 30 min",
+                    samples: model.monitor.history.samples(ReadingHistory.fanKey(first.id)),
+                    tint: .blue
+                )
+            }
+        }
+    }
+}
+
+private struct ModeCard: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Label("Fan Control", systemImage: "slider.horizontal.3")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    boostButton
+                }
+                HStack(spacing: 12) {
+                    ForEach(ControlMode.allCases, id: \.self) { mode in
+                        ModeTile(mode: mode, isSelected: model.controller.mode == mode) { model.setMode(mode) }
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                detail
             }
         }
     }
@@ -35,93 +127,52 @@ struct OverviewView: View {
         Button {
             model.toggleBoost()
         } label: {
-            Label(model.controller.isBoosting ? "Stop full blast" : "Full blast for 5 minutes", systemImage: "wind")
-                .font(.callout)
+            Label(model.controller.isBoosting ? "Stop Full Blast" : "Full Blast · 5 min", systemImage: "wind")
         }
-        .buttonStyle(.borderless)
-        .tint(model.controller.isBoosting ? .orange : .secondary)
+        .controlSize(.small)
+        .tint(model.controller.isBoosting ? .orange : nil)
         .disabled(!model.helper.isEnabled)
         .help("Run every fan at maximum speed for five minutes.")
     }
-}
-
-private struct ThermalHeadline: View {
-    @Environment(AppModel.self) private var model
-
-    private var headline: Double? {
-        let cpu = model.monitor.summary(.cpuPerformance)?.max
-        let gpu = model.monitor.summary(.gpu)?.max
-        return [cpu, gpu].compactMap { $0 }.max() ?? model.monitor.hottest?.celsius
-    }
-
-    var body: some View {
-        VStack(spacing: 6) {
-            TemperatureText(celsius: headline, style: .largeTitle)
-                .font(.system(size: 72, weight: .semibold, design: .rounded))
-            Text(headline.map(Self.status) ?? "Reading sensors…")
-                .font(.title3.weight(.medium))
-            Text(keyReadings)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-        }
-    }
-
-    private var keyReadings: String {
-        let unit = model.configuration.temperatureUnit
-        let parts: [(String, SensorFamily)] = [("CPU", .cpuPerformance), ("GPU", .gpu), ("SSD", .ssd), ("Battery", .battery)]
-        return parts.compactMap { name, family in
-            model.monitor.summary(family).map { "\(name) \(Formatters.temperature($0.max, unit: unit))" }
-        }.joined(separator: "  ·  ")
-    }
-
-    private static func status(for celsius: Double) -> String {
-        switch celsius {
-        case ..<60: "Running cool"
-        case ..<80: "Getting warm"
-        case ..<95: "Running hot"
-        default: "Very hot"
-        }
-    }
-}
-
-private struct ModeSwitch: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        VStack(spacing: 14) {
-            ControlModePicker()
-                .controlSize(.large)
-                .frame(maxWidth: 360)
-            Text(description)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            modeDetail
-        }
-    }
-
-    private var description: String {
-        if model.controller.isBoosting, let until = model.controller.boostUntil {
-            return "Full blast until \(until.formatted(date: .omitted, time: .shortened)), then back to \(model.controller.mode.title)."
-        }
-        switch model.controller.mode {
-        case .auto: return "macOS manages the fans. MacFans just watches."
-        case .constant: return "Fans hold this speed until MacFans quits or the Mac sleeps."
-        case .custom: return "Fans follow the “\(model.activeProfile.name)” profile until MacFans quits or the Mac sleeps."
-        }
-    }
 
     @ViewBuilder
-    private var modeDetail: some View {
+    private var detail: some View {
+        HStack(spacing: 16) {
+            switch model.controller.mode {
+            case .auto:
+                Text(statusLine)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            case .constant:
+                constantSlider
+            case .custom:
+                ProfilePicker()
+                    .labelsHidden()
+                    .fixedSize()
+                Text(statusLine)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(minHeight: 32)
+    }
+
+    private var statusLine: String {
+        if model.controller.isBoosting, let until = model.controller.boostUntil {
+            return "Full blast until \(until.formatted(date: .omitted, time: .shortened))."
+        }
         switch model.controller.mode {
         case .auto:
-            EmptyView()
+            return "macOS is managing the fans. Auto is also where MacFans returns whenever it quits or the Mac sleeps."
         case .constant:
-            constantSlider
+            return ""
         case .custom:
-            customStatus
+            guard let evaluation = model.controller.lastEvaluation else { return "Evaluating rules…" }
+            let active = model.activeProfile.rules.filter { evaluation.state.activeRuleIDs.contains($0.id) }
+            if !active.isEmpty { return active.map(\.name).joined(separator: ", ") + (active.count == 1 ? " is active." : " are active.") }
+            let stillForced = evaluation.commands.values.contains { $0 != .auto }
+            return stillForced ? "Rules released, easing back to Auto." : "No rule active. Fans are on Auto until one triggers."
         }
     }
 
@@ -134,39 +185,36 @@ private struct ModeSwitch: View {
             },
             set: { value in fans.forEach { model.setConstantSpeed(.percent(value), for: $0.id) } }
         )
-        return VStack(spacing: 4) {
+        return HStack(spacing: 14) {
+            Image(systemName: "fanblades")
+                .foregroundStyle(.secondary)
             Slider(value: percent, in: 0...100, step: 1)
-                .frame(maxWidth: 360)
+                .frame(maxWidth: 420)
             Text(sliderCaption(percent.wrappedValue))
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
         }
-        .padding(.top, 4)
     }
 
     private func sliderCaption(_ percent: Double) -> String {
         let rpms = model.monitor.fans.map { Formatters.rpm(FanSpeed.percent(percent).rpm(for: $0.limits)) }
         return "\(Formatters.percent(percent)) · " + rpms.joined(separator: " / ")
     }
+}
 
-    private var customStatus: some View {
-        HStack(spacing: 12) {
-            ProfilePicker()
-                .labelsHidden()
-                .fixedSize()
-            Text(ruleStatus)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+private struct TrendStrip: View {
+    let title: String
+    let samples: [HistorySample]
+    let tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            Sparkline(samples: samples, tint: tint)
+                .frame(height: 34)
         }
-        .padding(.top, 4)
-    }
-
-    private var ruleStatus: String {
-        guard let evaluation = model.controller.lastEvaluation else { return "Evaluating rules…" }
-        let active = model.activeProfile.rules.filter { evaluation.state.activeRuleIDs.contains($0.id) }
-        if !active.isEmpty { return active.map(\.name).joined(separator: ", ") + (active.count == 1 ? " is active" : " are active") }
-        let stillForced = evaluation.commands.values.contains { $0 != .auto }
-        return stillForced ? "Rules released, easing back to Auto" : "No rule active, fans on Auto"
     }
 }

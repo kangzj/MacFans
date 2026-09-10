@@ -6,8 +6,9 @@ struct Sparkline: View {
     var tint: Color = .accentColor
 
     var body: some View {
+        let domain = yDomain
         Chart(samples) { sample in
-            AreaMark(x: .value("Time", sample.id), y: .value("Value", sample.value))
+            AreaMark(x: .value("Time", sample.id), yStart: .value("Floor", domain.lowerBound), yEnd: .value("Value", sample.value))
                 .foregroundStyle(tint.opacity(0.15))
                 .interpolationMethod(.monotone)
             LineMark(x: .value("Time", sample.id), y: .value("Value", sample.value))
@@ -17,8 +18,9 @@ struct Sparkline: View {
         }
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
-        .chartYScale(domain: yDomain)
+        .chartYScale(domain: domain)
         .chartLegend(.hidden)
+        .clipped()
     }
 
     private var yDomain: ClosedRange<Double> {
