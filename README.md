@@ -131,7 +131,7 @@ A free Apple Development certificate is enough, no paid membership required:
 2. Click Manage Certificates…, then + › Apple Development.
 3. Find the identity name with `security find-identity -v -p codesigning` and build with it:
    ```sh
-   FANWRIGHT_SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)" scripts/build.sh
+   FANWRIGHT_SIGNING_IDENTITY="Apple Development" FANWRIGHT_SIGNING_TEAM=TEAMID scripts/build.sh
    ```
 
 Keep one copy of the app on disk.
@@ -151,14 +151,14 @@ MACFANS_HW_TESTS=1 swift test --package-path Packages/FanwrightKit   # also exer
 
 Other Macs only run the app without warnings if it is signed with a Developer ID certificate and notarized by Apple, which needs an Apple Developer Program membership.
 
-1. Install the "Developer ID Application" certificate in your login keychain and note the Team ID shown in parentheses in its name.
+1. Install the "Developer ID Application" certificate in your login keychain and note your Team ID (shown in parentheses by `security find-identity -v -p codesigning`).
 2. Store notarization credentials once:
    ```sh
    xcrun notarytool store-credentials fanwright --apple-id you@example.com --team-id TEAMID --password app-specific-password
    ```
 3. Build, sign, package, notarize, and staple in one go:
    ```sh
-   scripts/release.sh --identity "Developer ID Application: Your Name (TEAMID)" --notarize-profile fanwright
+   scripts/release.sh --identity "Developer ID Application" --team TEAMID --notarize-profile fanwright
    ```
    The result is `dist/Fanwright-<version>.dmg`.
 

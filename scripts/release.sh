@@ -2,8 +2,9 @@
 # Builds a Release Fanwright.app, signs it, packages a DMG, and optionally notarizes it.
 #
 #   scripts/release.sh                                   # ad-hoc signed, runs only on this Mac
-#   scripts/release.sh --identity "Developer ID Application: Jasper Kang (TEAMID)"
-#   scripts/release.sh --identity "..." --notarize-profile fanwright
+#   scripts/release.sh --identity "Apple Development" --team TEAMID          # free personal-team certificate
+#   scripts/release.sh --identity "Developer ID Application" --team TEAMID   # distributable
+#   scripts/release.sh --identity "..." --team TEAMID --notarize-profile fanwright
 #
 # The notarization profile is created once with:
 #   xcrun notarytool store-credentials fanwright --apple-id you@example.com --team-id TEAMID --password app-specific-password
@@ -11,22 +12,22 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 identity="-"
+team=""
 notarize_profile=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --identity) identity="$2"; shift 2 ;;
+    --team) team="$2"; shift 2 ;;
     --notarize-profile) notarize_profile="$2"; shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
-team=""
 # launchd refuses an ad-hoc signed daemon that has the hardened runtime flag (Launch Constraint Violation),
 # so ad-hoc builds ship without it. A real identity keeps hardened runtime, which notarization requires.
 hardened_runtime="NO"
 if [[ "$identity" != "-" ]]; then
-  team=$(echo "$identity" | sed -n 's/.*(\([A-Z0-9]*\)).*/\1/p')
-  [[ -n "$team" ]] || { echo "Could not read the Team ID from the identity string" >&2; exit 1; }
+  [[ -n "$team" ]] || { echo "--team TEAMID is required with --identity" >&2; exit 1; }
   hardened_runtime="YES"
 fi
 
