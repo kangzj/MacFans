@@ -53,7 +53,7 @@ struct SidebarCommands: Commands {
 }
 
 struct MainWindow: View {
-    static let id = "dashboard"
+    static let id = "macfans.main"
 
     @Environment(AppModel.self) private var model
     @State private var selection: SidebarItem = .overview
@@ -82,10 +82,11 @@ struct MainWindow: View {
                             .labelsHidden()
                     }
                     ControlModePicker()
+                    BoostButton()
                 }
             }
         }
-        .frame(minWidth: 800, idealWidth: 860, maxWidth: .infinity, minHeight: 360, idealHeight: 370, maxHeight: .infinity)
+        .frame(minWidth: 800, idealWidth: 860, maxWidth: .infinity, minHeight: 300, idealHeight: 310, maxHeight: .infinity)
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.sidebarSelection, $selection)
     }

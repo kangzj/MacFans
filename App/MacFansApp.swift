@@ -10,7 +10,7 @@ struct MacFansApp: App {
             MainWindow()
                 .environment(appDelegate.model)
         }
-        .defaultSize(width: 860, height: 370)
+        .defaultSize(width: 860, height: 310)
         .windowResizability(.contentSize)
         .commands { SidebarCommands() }
 

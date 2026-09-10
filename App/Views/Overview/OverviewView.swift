@@ -81,11 +81,8 @@ private struct FansCard: View {
                 }
             }
             .padding(.vertical, 4)
-            HStack(spacing: 12) {
-                modeDetail
-                Spacer(minLength: 0)
-                boostButton
-            }
+            modeDetail
+                .frame(maxWidth: .infinity)
             Spacer(minLength: 0)
             if let first = model.monitor.fans.first {
                 TrendStrip(
@@ -95,18 +92,6 @@ private struct FansCard: View {
                 )
             }
         }
-    }
-
-    private var boostButton: some View {
-        Button {
-            model.toggleBoost()
-        } label: {
-            Label(model.controller.isBoosting ? "Stop Full Blast" : "Full Blast · 5 min", systemImage: "wind")
-        }
-        .controlSize(.small)
-        .tint(model.controller.isBoosting ? .orange : nil)
-        .disabled(!model.helper.isEnabled)
-        .help("Run every fan at maximum speed for five minutes, then return to the current mode.")
     }
 
     @ViewBuilder
@@ -126,6 +111,7 @@ private struct FansCard: View {
             .font(.callout)
             .foregroundStyle(.secondary)
             .lineLimit(1)
+            .multilineTextAlignment(.center)
             .frame(minHeight: 22)
     }
 
@@ -166,14 +152,28 @@ private struct TrendStrip: View {
     let title: String
     let samples: [HistorySample]
     let tint: Color
+    @AppStorage("showOverviewTrends") private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption2)
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    Text(title)
+                        .font(.caption2)
+                }
                 .foregroundStyle(.tertiary)
-            Sparkline(samples: samples, tint: tint)
-                .frame(height: 34)
+            }
+            .buttonStyle(.plain)
+            .help(isExpanded ? "Hide the last 30 minutes" : "Show the last 30 minutes")
+            if isExpanded {
+                Sparkline(samples: samples, tint: tint)
+                    .frame(height: 34)
+            }
         }
     }
 }
