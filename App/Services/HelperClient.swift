@@ -7,6 +7,7 @@ import Synchronization
 @Observable
 final class HelperClient: FanCommandSink {
     enum Status: Equatable {
+        case unsignedBuild
         case notRegistered
         case requiresApproval
         case enabled
@@ -41,6 +42,10 @@ final class HelperClient: FanCommandSink {
     var isEnabled: Bool { status == .enabled }
 
     func refreshStatus() {
+        guard CodeSigningInfo.teamIdentifier() != nil else {
+            status = .unsignedBuild
+            return
+        }
         status = switch service.status {
         case .enabled: .enabled
         case .requiresApproval: .requiresApproval

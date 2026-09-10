@@ -34,7 +34,7 @@ xcodegen generate --quiet
 rm -rf build/Release dist
 xcodebuild -project Fanwright.xcodeproj -scheme Fanwright -configuration Release -derivedDataPath build/Release \
   CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" OTHER_CODE_SIGN_FLAGS="--timestamp" \
-  ENABLE_HARDENED_RUNTIME="$hardened_runtime" build 2>&1 \
+  ENABLE_HARDENED_RUNTIME="$hardened_runtime" ARCHS=arm64 build 2>&1 \
   | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
 
 app="build/Release/Build/Products/Release/Fanwright.app"

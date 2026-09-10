@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatusBanner: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         if let error = model.controller.lastError {
@@ -10,8 +11,12 @@ struct StatusBanner: View {
             }
         } else if let callToAction = model.helper.status.callToAction {
             banner(symbol: "lock.shield", tint: .blue, text: callToAction) {
-                Button(model.helper.status == .requiresApproval ? "Open Login Items" : "Install Helper") {
-                    model.installHelper()
+                Button(model.helper.status.actionTitle) {
+                    if model.helper.status == .unsignedBuild {
+                        openURL(HelperClient.Status.signingGuideURL)
+                    } else {
+                        model.installHelper()
+                    }
                 }
             }
         }

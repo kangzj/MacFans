@@ -20,16 +20,22 @@ struct HelperSettingsTab: View {
                 }
             }
             Section {
-                HStack {
-                    Button(model.helper.isEnabled ? "Reinstall" : "Install Helper") { model.installHelper() }
-                    if model.helper.status == .requiresApproval {
-                        Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                if model.helper.status == .unsignedBuild {
+                    Text(model.helper.status.callToAction ?? "")
+                        .font(.callout)
+                    Link("How to build a copy that can control fans", destination: HelperClient.Status.signingGuideURL)
+                } else {
+                    HStack {
+                        Button(model.helper.isEnabled ? "Reinstall" : "Install Helper") { model.installHelper() }
+                        if model.helper.status == .requiresApproval {
+                            Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                        }
+                        if model.helper.status != .notRegistered {
+                            Button("Remove", role: .destructive) { Task { await model.removeHelper() } }
+                        }
+                        Spacer()
+                        Button("Refresh") { model.helper.refreshStatus() }
                     }
-                    if model.helper.status != .notRegistered {
-                        Button("Remove", role: .destructive) { Task { await model.removeHelper() } }
-                    }
-                    Spacer()
-                    Button("Refresh") { model.helper.refreshStatus() }
                 }
                 Text("Fanwright installs a small root daemon that is the only component allowed to change fan speed. It clamps every request to the fan's hardware range and returns fans to Auto if the app stops responding for 10 seconds.")
                     .font(.caption)
