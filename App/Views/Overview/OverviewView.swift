@@ -2,7 +2,13 @@ import MacFansCore
 import SwiftUI
 
 struct OverviewView: View {
+    static let trendsExpandedKey = "showOverviewTrends"
+
     @Environment(AppModel.self) private var model
+
+    static func minimumHeight(trendsExpanded: Bool) -> CGFloat {
+        trendsExpanded ? 372 : 322
+    }
 
     var body: some View {
         if case .unavailable(let message) = model.monitor.availability {
@@ -14,7 +20,7 @@ struct OverviewView: View {
                 FansCard()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .padding(16)
+            .padding(24)
         }
     }
 }
@@ -152,28 +158,33 @@ private struct TrendStrip: View {
     let title: String
     let samples: [HistorySample]
     let tint: Color
-    @AppStorage("showOverviewTrends") private var isExpanded = false
+    @AppStorage(OverviewView.trendsExpandedKey) private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                    Text(title)
-                        .font(.caption2)
-                }
-                .foregroundStyle(.tertiary)
-            }
-            .buttonStyle(.plain)
-            .help(isExpanded ? "Hide the last 30 minutes" : "Show the last 30 minutes")
+        VStack(spacing: 8) {
             if isExpanded {
                 Sparkline(samples: samples, tint: tint)
                     .frame(height: 34)
+                    .transition(.opacity)
             }
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+            } label: {
+                HStack(spacing: 5) {
+                    Text(title)
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2.weight(.semibold))
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(.quaternary.opacity(0.6), in: Capsule())
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
+            .help(isExpanded ? "Hide the last 30 minutes" : "Show the last 30 minutes")
         }
     }
 }

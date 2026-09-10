@@ -58,6 +58,7 @@ struct MainWindow: View {
     @Environment(AppModel.self) private var model
     @State private var selection: SidebarItem = .overview
     @State private var columnVisibility = NavigationSplitViewVisibility.detailOnly
+    @AppStorage(OverviewView.trendsExpandedKey) private var trendsExpanded = false
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -86,7 +87,7 @@ struct MainWindow: View {
                 }
             }
         }
-        .frame(minWidth: 800, idealWidth: 860, maxWidth: .infinity, minHeight: 300, idealHeight: 310, maxHeight: .infinity)
+        .frame(minWidth: 800, idealWidth: 860, maxWidth: .infinity, minHeight: OverviewView.minimumHeight(trendsExpanded: trendsExpanded), maxHeight: .infinity)
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.sidebarSelection, $selection)
     }
