@@ -4,3 +4,4 @@ MacFans.xcodeproj/
 xcuserdata/
 .build/
 tasks/
+dist/

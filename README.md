@@ -51,6 +51,24 @@ For distribution, sign both targets with a Developer ID and tighten the requirem
 The helper works best when the app runs from `/Applications`.
 Copy the built app there before installing the helper from Settings › Helper.
 
+## Distributing
+
+Other Macs only run the app if it is signed with a Developer ID certificate and notarized by Apple, which needs an Apple Developer Program membership.
+
+1. Install the "Developer ID Application" certificate in your login keychain and note the Team ID shown in parentheses in its name.
+2. Store notarization credentials once:
+   ```sh
+   xcrun notarytool store-credentials macfans --apple-id you@example.com --team-id TEAMID --password app-specific-password
+   ```
+3. Build, sign, package, notarize, and staple in one go:
+   ```sh
+   scripts/release.sh --identity "Developer ID Application: Your Name (TEAMID)" --notarize-profile macfans
+   ```
+   The result is `dist/MacFans-<version>.dmg`.
+
+Without `--identity` the script produces an ad-hoc signed DMG that only runs on the Mac that built it.
+When signed with a Developer ID, the helper automatically requires connecting apps to be signed by the same team, so only MacFans can ask it to change fan speed.
+
 ## Tests
 
 ```sh
