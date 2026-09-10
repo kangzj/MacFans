@@ -12,7 +12,7 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var sensorOverrides: [SensorID: SensorOverride] = [:]
     public var pollInterval: TimeInterval = 2
     public var temperatureUnit: TemperatureUnit = .celsius
-    public var menuBarReadout: MenuBarReadout = .hottest
+    public var menuBarReadout: MenuBarReadout = .cpu
     public var showAllSensors = false
     public var startInModeOnLaunch = false
 

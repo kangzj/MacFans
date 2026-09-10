@@ -34,8 +34,8 @@ final class ThermalMonitor {
             .max { $0.1 < $1.1 }
     }
 
-    func summary(_ id: String) -> SensorSummary? {
-        summaries.first { $0.id == id }
+    func summary(_ family: SensorFamily) -> SensorSummary? {
+        summaries.first { $0.family == family }
     }
 
     func value(for group: SensorGroup, _ aggregate: Aggregate) -> Double? {
@@ -96,8 +96,8 @@ final class ThermalMonitor {
 
         var samples: [String: Double] = [:]
         for (id, celsius) in plausible { samples[id.rawValue] = celsius }
-        for summary in summaries { samples[summary.id] = summary.max }
-        for fan in fans { samples[ReadingHistory.fanKey(fan.id.rawValue)] = fan.actualRPM }
+        for summary in summaries { samples[ReadingHistory.summaryKey(summary.family)] = summary.max }
+        for fan in fans { samples[ReadingHistory.fanKey(fan.id)] = fan.actualRPM }
         history.append(samples, at: date)
     }
 

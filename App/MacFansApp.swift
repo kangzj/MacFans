@@ -4,38 +4,36 @@ import SwiftUI
 @main
 struct MacFansApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
-    @State private var model = AppModel()
 
     var body: some Scene {
         Window("MacFans", id: MainWindow.id) {
             MainWindow()
-                .environment(model)
-                .onAppear { appDelegate.model = model }
+                .environment(appDelegate.model)
         }
-        .defaultSize(width: 980, height: 660)
+        .defaultSize(width: 1100, height: 720)
+        .commands { SidebarCommands() }
 
         MenuBarExtra {
             MenuBarPanel()
-                .environment(model)
+                .environment(appDelegate.model)
         } label: {
             MenuBarLabel()
-                .environment(model)
+                .environment(appDelegate.model)
         }
         .menuBarExtraStyle(.window)
 
         Settings {
             SettingsView()
-                .environment(model)
+                .environment(appDelegate.model)
         }
     }
 }
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    var model: AppModel?
+    let model = AppModel()
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let model else { return .terminateNow }
         Task {
             await model.prepareForTermination()
             sender.reply(toApplicationShouldTerminate: true)

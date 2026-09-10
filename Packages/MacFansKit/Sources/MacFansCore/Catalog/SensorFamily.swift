@@ -1,4 +1,4 @@
-enum SensorFamily: String, CaseIterable, Sendable {
+public enum SensorFamily: String, CaseIterable, Codable, Sendable {
     case cpuPerformance = "cpu-performance"
     case cpuEfficiency = "cpu-efficiency"
     case gpu
@@ -9,7 +9,7 @@ enum SensorFamily: String, CaseIterable, Sendable {
     case wifi
     case ambient
 
-    var title: String {
+    public var title: String {
         switch self {
         case .cpuPerformance: "CPU Performance Cores"
         case .cpuEfficiency: "CPU Efficiency Cores"
@@ -23,7 +23,7 @@ enum SensorFamily: String, CaseIterable, Sendable {
         }
     }
 
-    var group: SensorGroup {
+    public var group: SensorGroup {
         switch self {
         case .cpuPerformance, .cpuEfficiency: .cpu
         case .gpu: .gpu

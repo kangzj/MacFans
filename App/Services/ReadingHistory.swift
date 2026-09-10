@@ -1,4 +1,5 @@
 import Foundation
+import MacFansCore
 import Observation
 
 struct HistorySample: Identifiable, Sendable {
@@ -29,7 +30,6 @@ final class ReadingHistory {
         series[key] ?? []
     }
 
-    static func fanKey(_ id: FanIDKey) -> String { "fan:\(id)" }
+    static func fanKey(_ id: FanID) -> String { "fan:\(id.rawValue)" }
+    static func summaryKey(_ family: SensorFamily) -> String { "summary:\(family.rawValue)" }
 }
-
-typealias FanIDKey = Int

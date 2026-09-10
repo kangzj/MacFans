@@ -7,9 +7,10 @@ struct ProfilesView: View {
     @State private var showDuplicatePrompt = false
 
     var body: some View {
-        HSplitView {
+        HStack(spacing: 0) {
             profileList
-                .frame(minWidth: 200, idealWidth: 220, maxWidth: 280)
+                .frame(width: 180)
+            Divider()
             editor
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -35,7 +36,7 @@ struct ProfilesView: View {
                 }
                 .tag(profile.id)
             }
-            .listStyle(.sidebar)
+            .listStyle(.inset)
             Divider()
             HStack(spacing: 4) {
                 Button { addProfile() } label: { Image(systemName: "plus") }
@@ -185,6 +186,5 @@ private struct ProfileEditor: View {
     private func update(_ change: (inout Profile) -> Void) {
         guard let index = model.configuration.profiles.firstIndex(where: { $0.id == profile.id }) else { return }
         change(&model.configuration.profiles[index])
-        if profile.id == model.configuration.activeProfileID { model.controller.resetEngine() }
     }
 }

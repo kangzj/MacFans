@@ -17,9 +17,9 @@ struct MenuBarLabel: View {
     private var readout: String? {
         let unit = model.configuration.temperatureUnit
         switch model.configuration.menuBarReadout {
-        case .hottest:
-            return model.monitor.summary("cpu-performance").map { Formatters.temperature($0.max, unit: unit) }
-                ?? model.monitor.hottest.map { Formatters.temperature($0.celsius, unit: unit) }
+        case .cpu:
+            return (model.monitor.summary(.cpuPerformance)?.max ?? model.monitor.hottest?.celsius)
+                .map { Formatters.temperature($0, unit: unit) }
         case .sensor(let id):
             return model.monitor.readings[id].map { Formatters.temperature($0, unit: unit) }
         case .fanRPM(let id):

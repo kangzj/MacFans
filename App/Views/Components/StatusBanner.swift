@@ -2,7 +2,6 @@ import SwiftUI
 
 struct StatusBanner: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         if let error = model.controller.lastError {

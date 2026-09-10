@@ -6,7 +6,7 @@ struct MenuBarPanel: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
-    private let readouts = [("cpu-performance", "CPU"), ("gpu", "GPU"), ("ssd", "SSD"), ("battery", "Battery")]
+    private let readouts: [(family: SensorFamily, title: String)] = [(.cpuPerformance, "CPU"), (.gpu, "GPU"), (.ssd, "SSD"), (.battery, "Battery")]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -43,12 +43,12 @@ struct MenuBarPanel: View {
 
     private var temperatureGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(readouts, id: \.0) { id, title in
+            ForEach(readouts, id: \.family) { family, title in
                 HStack {
                     Text(title)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    TemperatureText(celsius: model.monitor.summary(id)?.max, style: .title3)
+                    TemperatureText(celsius: model.monitor.summary(family)?.max, style: .title3)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)

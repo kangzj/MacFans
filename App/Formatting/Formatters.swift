@@ -18,7 +18,11 @@ enum Formatters {
     }
 
     static func rpm(_ value: Double) -> String {
-        (rpmFormatter.string(from: NSNumber(value: value)) ?? "\(Int(value))") + " RPM"
+        rpmValue(value) + " RPM"
+    }
+
+    static func rpmValue(_ value: Double) -> String {
+        rpmFormatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
     }
 
     static func percent(_ value: Double) -> String {

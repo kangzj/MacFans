@@ -13,18 +13,9 @@ struct FanGauge: View {
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
-                Circle()
-                    .trim(from: 0.1, to: 0.9)
-                    .stroke(.quaternary, style: StrokeStyle(lineWidth: diameter * 0.09, lineCap: .round))
-                Circle()
-                    .trim(from: 0.1, to: 0.1 + 0.8 * fraction)
-                    .stroke(
-                        AngularGradient(colors: [.teal, .blue, .indigo], center: .center, startAngle: .degrees(36), endAngle: .degrees(324)),
-                        style: StrokeStyle(lineWidth: diameter * 0.09, lineCap: .round)
-                    )
-                    .animation(.easeInOut(duration: 0.6), value: fraction)
+                ring
                 VStack(spacing: 2) {
-                    Text(Formatters.rpm(fan.actualRPM).replacingOccurrences(of: " RPM", with: ""))
+                    Text(Formatters.rpmValue(fan.actualRPM))
                         .font(.system(size: diameter * 0.2, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                         .contentTransition(.numericText())
@@ -33,7 +24,6 @@ struct FanGauge: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .rotationEffect(.degrees(90))
             .frame(width: diameter, height: diameter)
             .overlay(alignment: .bottom) {
                 Text(fan.isForced ? "Target \(Formatters.rpm(fan.targetRPM))" : "Auto")
@@ -44,5 +34,21 @@ struct FanGauge: View {
             Text(fan.name)
                 .font(.headline)
         }
+    }
+
+    private var ring: some View {
+        ZStack {
+            Circle()
+                .trim(from: 0.1, to: 0.9)
+                .stroke(.quaternary, style: StrokeStyle(lineWidth: diameter * 0.09, lineCap: .round))
+            Circle()
+                .trim(from: 0.1, to: 0.1 + 0.8 * fraction)
+                .stroke(
+                    AngularGradient(colors: [.teal, .blue, .indigo], center: .center, startAngle: .degrees(36), endAngle: .degrees(324)),
+                    style: StrokeStyle(lineWidth: diameter * 0.09, lineCap: .round)
+                )
+                .animation(.easeInOut(duration: 0.6), value: fraction)
+        }
+        .rotationEffect(.degrees(90))
     }
 }

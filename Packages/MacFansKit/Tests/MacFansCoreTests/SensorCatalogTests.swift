@@ -43,26 +43,37 @@ import Testing
             ("TCMb", 55.0), ("TCDX", 90.0), ("TB0T", 30.0), ("TW0P", 45.0), ("TAOL", 25.0),
         ].map { (SensorID(rawValue: $0), $1) })
         let summaries = SensorCatalog.summaries(sensors: sensors, readings: readings)
-        #expect(summaries.map(\.id) == ["cpu-performance", "cpu-efficiency", "gpu", "soc", "battery", "wifi", "ambient"])
+        #expect(summaries.map(\.id) == [.cpuPerformance, .cpuEfficiency, .gpu, .soc, .battery, .wifi, .ambient])
         #expect(summaries.map(\.title) == ["CPU Performance Cores", "CPU Efficiency Cores", "GPU", "SoC Package", "Battery", "Wi-Fi", "Ambient"])
         let byID = Dictionary(uniqueKeysWithValues: summaries.map { ($0.id, $0) })
-        #expect(byID["cpu-performance"]?.max == 70)
-        #expect(byID["cpu-performance"]?.average == 60)
-        #expect(byID["cpu-performance"]?.group == .cpu)
-        #expect(byID["cpu-performance"]?.sensorIDs == [SensorID(rawValue: "Tp00"), SensorID(rawValue: "Tp04")])
-        #expect(byID["gpu"]?.max == 62)
-        #expect(byID["soc"]?.max == 55)
-        #expect(byID["soc"]?.sensorIDs == [SensorID(rawValue: "TCMb")])
-        #expect(byID["ambient"]?.sensorIDs == [SensorID(rawValue: "TAOL")])
+        #expect(byID[.cpuPerformance]?.max == 70)
+        #expect(byID[.cpuPerformance]?.average == 60)
+        #expect(byID[.cpuPerformance]?.group == .cpu)
+        #expect(byID[.cpuPerformance]?.sensorIDs == [SensorID(rawValue: "Tp00"), SensorID(rawValue: "Tp04")])
+        #expect(byID[.gpu]?.max == 62)
+        #expect(byID[.soc]?.max == 55)
+        #expect(byID[.soc]?.sensorIDs == [SensorID(rawValue: "TCMb")])
+        #expect(byID[.ambient]?.sensorIDs == [SensorID(rawValue: "TAOL")])
     }
 
     @Test func socFallsBackToAllSoCSensorsWithoutPackageKey() {
         let sensors = SensorCatalog.sensors(for: ["TCDX", "Ts0a"])
         let readings = [SensorID(rawValue: "TCDX"): 80.0, SensorID(rawValue: "Ts0a"): 60.0]
         let summaries = SensorCatalog.summaries(sensors: sensors, readings: readings)
-        #expect(summaries.map(\.id) == ["soc"])
+        #expect(summaries.map(\.id) == [.soc])
         #expect(summaries[0].max == 80)
         #expect(summaries[0].average == 70)
         #expect(summaries[0].sensorIDs.count == 2)
+    }
+
+    @Test func legacyCoreKeysOnlyApplyWithoutTpKeys() {
+        let m4 = SensorCatalog.sensors(for: ["Tf04", "Te05", "Tf14"])
+        #expect(m4.map(\.group) == [.cpu, .cpu, .gpu])
+        let m5 = SensorCatalog.sensors(for: ["Tp00", "Tf04", "Tf14"])
+        #expect(m5.map(\.group) == [.other, .other, .cpu])
+        #expect(m5[0].name == "Tf04")
+        let summaries = SensorCatalog.summaries(sensors: m5, readings: [SensorID(rawValue: "Tp00"): 50, SensorID(rawValue: "Tf04"): 90])
+        #expect(summaries.map(\.id) == [.cpuPerformance])
+        #expect(summaries[0].max == 50)
     }
 }

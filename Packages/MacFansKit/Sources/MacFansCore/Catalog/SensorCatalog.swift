@@ -5,8 +5,9 @@ public enum SensorCatalog {
 
     public static func sensors(for keys: [String], overrides: [SensorID: SensorOverride] = [:]) -> [Sensor] {
         var numbering = SensorNamingRule.SeriesNumbering()
+        let rules = SensorNamingRule.rules(for: keys)
         return keys.sorted().map { key in
-            let rule = SensorNamingRule.matching(key)
+            let rule = rules.first { $0.matches(key) }
             let catalogName = rule?.label.name(for: key, numbering: &numbering) ?? key
             let id = SensorID(rawValue: key)
             let override = overrides[id]
@@ -21,8 +22,9 @@ public enum SensorCatalog {
 
     public static func summaries(sensors: [Sensor], readings: [SensorID: Double]) -> [SensorSummary] {
         var members: [SensorFamily: [(id: SensorID, representsFamily: Bool)]] = [:]
+        let rules = SensorNamingRule.rules(for: sensors.lazy.map(\.id.rawValue))
         for sensor in sensors {
-            guard let rule = SensorNamingRule.matching(sensor.id.rawValue), let family = rule.family else { continue }
+            guard let rule = rules.first(where: { $0.matches(sensor.id.rawValue) }), let family = rule.family else { continue }
             members[family, default: []].append((sensor.id, rule.representsFamily))
         }
         return SensorFamily.allCases.compactMap { family in
@@ -31,7 +33,7 @@ public enum SensorCatalog {
             let ids = (representatives.isEmpty ? familyMembers : representatives).map(\.id)
             let values = ids.compactMap { readings[$0] }
             guard let max = Aggregate.max.value(of: values), let average = Aggregate.average.value(of: values) else { return nil }
-            return SensorSummary(id: family.rawValue, title: family.title, group: family.group, max: max, average: average, sensorIDs: ids)
+            return SensorSummary(family: family, max: max, average: average, sensorIDs: ids)
         }
     }
 }

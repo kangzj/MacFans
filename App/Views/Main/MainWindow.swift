@@ -24,6 +24,32 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     }
 }
 
+struct SidebarSelectionKey: FocusedValueKey {
+    typealias Value = Binding<SidebarItem>
+}
+
+extension FocusedValues {
+    var sidebarSelection: Binding<SidebarItem>? {
+        get { self[SidebarSelectionKey.self] }
+        set { self[SidebarSelectionKey.self] = newValue }
+    }
+}
+
+struct SidebarCommands: Commands {
+    @FocusedBinding(\.sidebarSelection) private var selection
+
+    var body: some Commands {
+        CommandGroup(after: .sidebar) {
+            Divider()
+            ForEach(Array(SidebarItem.allCases.enumerated()), id: \.element) { index, item in
+                Button(item.title) { selection = item }
+                    .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+                    .disabled(selection == nil)
+            }
+        }
+    }
+}
+
 struct MainWindow: View {
     static let id = "main"
 
@@ -56,8 +82,9 @@ struct MainWindow: View {
                 }
             }
         }
-        .frame(minWidth: 900, minHeight: 600)
+        .frame(minWidth: 1040, minHeight: 620)
         .navigationSplitViewStyle(.balanced)
+        .focusedSceneValue(\.sidebarSelection, $selection)
     }
 
     @ViewBuilder

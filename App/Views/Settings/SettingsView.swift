@@ -20,7 +20,6 @@ struct SettingsView: View {
 
 private struct GeneralSettings: View {
     @Environment(AppModel.self) private var model
-    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var launchAtLoginError: String?
 
     var body: some View {
@@ -42,8 +41,10 @@ private struct GeneralSettings: View {
                 }
             }
             Section {
-                Toggle("Launch at login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, enabled in setLaunchAtLogin(enabled) }
+                Toggle("Launch at login", isOn: Binding(
+                    get: { SMAppService.mainApp.status == .enabled },
+                    set: { setLaunchAtLogin($0) }
+                ))
                 if let launchAtLoginError {
                     Text(launchAtLoginError).font(.caption).foregroundStyle(.red)
                 }
@@ -66,7 +67,6 @@ private struct GeneralSettings: View {
             launchAtLoginError = nil
         } catch {
             launchAtLoginError = error.localizedDescription
-            launchAtLogin = SMAppService.mainApp.status == .enabled
         }
     }
 }
@@ -78,7 +78,7 @@ private struct MenuBarSettings: View {
         @Bindable var model = model
         Form {
             Picker("Show next to the icon", selection: $model.configuration.menuBarReadout) {
-                Text("CPU temperature").tag(MenuBarReadout.hottest)
+                Text("CPU temperature").tag(MenuBarReadout.cpu)
                 ForEach(favorites) { sensor in
                     Text(sensor.name).tag(MenuBarReadout.sensor(sensor.id))
                 }

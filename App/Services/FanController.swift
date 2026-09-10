@@ -6,6 +6,7 @@ import Observation
 @Observable
 final class FanController {
     static let boostDuration: TimeInterval = 5 * 60
+    static let heartbeatInterval: Duration = .seconds(2)
 
     private(set) var mode: ControlMode = .auto
     private(set) var engineState = RuleEngineState()
@@ -13,10 +14,13 @@ final class FanController {
     private(set) var boostUntil: Date?
     private(set) var lastError: String?
     private var sentCommands: [FanID: FanCommand] = [:]
+    private var generation = 0
+    private var heartbeatTask: Task<Void, Never>?
     private let helper: HelperClient
 
     init(helper: HelperClient) {
         self.helper = helper
+        startHeartbeat()
     }
 
     var isBoosting: Bool {
@@ -28,8 +32,8 @@ final class FanController {
     func setMode(_ mode: ControlMode) {
         guard mode != self.mode else { return }
         self.mode = mode
-        resetEngine()
         lastError = nil
+        invalidate()
     }
 
     func resetEngine() {
@@ -40,10 +44,12 @@ final class FanController {
     func boost() {
         boostUntil = Date().addingTimeInterval(Self.boostDuration)
         lastError = nil
+        invalidate()
     }
 
     func cancelBoost() {
         boostUntil = nil
+        invalidate()
     }
 
     func clearError() {
@@ -54,6 +60,7 @@ final class FanController {
         guard monitor.availability == .available, !monitor.fans.isEmpty else { return }
         if let boostUntil, boostUntil <= Date() { self.boostUntil = nil }
 
+        let startGeneration = generation
         let desired = desiredCommands(monitor: monitor, configuration: configuration)
         let wantsControl = desired.values.contains { $0 != .auto }
         guard helper.isEnabled else {
@@ -67,13 +74,11 @@ final class FanController {
                 case .auto: try await helper.setAuto(index: fan.rawValue)
                 case .forced(let rpm): try await helper.setFan(index: fan.rawValue, rpm: rpm)
                 }
+                guard generation == startGeneration else { return }
                 sentCommands[fan] = command
             }
-            let helperHasForcedFans = try await helper.heartbeat()
-            if helperHasForcedFans, !wantsControl {
-                try await helper.setAllAuto()
-            }
         } catch {
+            guard generation == startGeneration else { return }
             fail(error.localizedDescription)
         }
     }
@@ -81,14 +86,40 @@ final class FanController {
     func restoreAuto() async {
         boostUntil = nil
         mode = .auto
-        resetEngine()
-        sentCommands = [:]
+        invalidate()
         guard helper.isEnabled else { return }
         do {
             try await helper.setAllAuto()
         } catch {
             lastError = error.localizedDescription
         }
+    }
+
+    private func startHeartbeat() {
+        heartbeatTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.heartbeatInterval)
+                await self?.heartbeat()
+            }
+        }
+    }
+
+    private func heartbeat() async {
+        guard helper.isEnabled else { return }
+        let startGeneration = generation
+        guard let helperHasForcedFans = try? await helper.heartbeat(), generation == startGeneration else { return }
+        let sentForced = sentCommands.values.contains { $0 != .auto }
+        if helperHasForcedFans != sentForced {
+            // The helper restarted or its watchdog fired; forget what was sent so the next tick resyncs.
+            sentCommands = [:]
+            if !sentForced { try? await helper.setAllAuto() }
+        }
+    }
+
+    private func invalidate() {
+        generation += 1
+        resetEngine()
+        sentCommands = [:]
     }
 
     private func desiredCommands(monitor: ThermalMonitor, configuration: AppConfiguration) -> [FanID: FanCommand] {
@@ -124,7 +155,6 @@ final class FanController {
         lastError = message
         mode = .auto
         boostUntil = nil
-        resetEngine()
-        sentCommands = [:]
+        invalidate()
     }
 }

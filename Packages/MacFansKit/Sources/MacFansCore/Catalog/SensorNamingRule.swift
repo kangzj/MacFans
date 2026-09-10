@@ -45,8 +45,12 @@ struct SensorNamingRule: Sendable {
     let family: SensorFamily?
     let representsFamily: Bool
 
-    static func matching(_ key: String) -> SensorNamingRule? {
-        all.first { $0.pattern.matches(key) }
+    static func rules(for keys: some Sequence<String>) -> [SensorNamingRule] {
+        keys.contains { $0.hasPrefix("Tp0") } ? common : common + appleSiliconM3M4Cores
+    }
+
+    func matches(_ key: String) -> Bool {
+        pattern.matches(key)
     }
 
     private static func exact(_ key: String, _ group: SensorGroup, _ name: String, family: SensorFamily? = nil, representsFamily: Bool = false) -> SensorNamingRule {
@@ -57,7 +61,7 @@ struct SensorNamingRule: Sendable {
         SensorNamingRule(pattern: .prefix(prefix), group: group, label: label, family: family, representsFamily: false)
     }
 
-    static let all: [SensorNamingRule] = [
+    private static let common: [SensorNamingRule] = [
         .exact("TW0P", .ambient, "Wi-Fi Module", family: .wifi),
         .exact("TCMb", .soc, "SoC Package", family: .soc, representsFamily: true),
         .exact("TCDX", .soc, "SoC Die", family: .soc),
@@ -70,11 +74,6 @@ struct SensorNamingRule: Sendable {
         .prefix("TH1", .storage, .series("SSD"), family: .ssd),
         .prefix("Tp0", .cpu, .series("CPU Performance Core"), family: .cpuPerformance),
         .prefix("Tp1", .cpu, .series("CPU Efficiency Core"), family: .cpuEfficiency),
-        .prefix("Te0", .cpu, .series("CPU Efficiency Core"), family: .cpuEfficiency),
-        .prefix("Tf0", .cpu, .series("CPU Performance Core"), family: .cpuPerformance),
-        .prefix("Tf4", .cpu, .series("CPU Performance Core"), family: .cpuPerformance),
-        .prefix("Tf1", .gpu, .series("GPU Sensor"), family: .gpu),
-        .prefix("Tf2", .gpu, .series("GPU Sensor"), family: .gpu),
         .prefix("TfC", .soc, .series("SoC Sensor"), family: .soc),
         .prefix("Tg", .gpu, .gpuCluster, family: .gpu),
         .prefix("Tm", .memory, .series("Memory"), family: .memory),
@@ -84,5 +83,14 @@ struct SensorNamingRule: Sendable {
         .prefix("TaR", .ambient, .series("Airflow Right"), family: .ambient),
         .prefix("TV", .power, .series("Power Rail")),
         .prefix("TD", .display, .series("Display")),
+    ]
+
+    // M3 and M4 report cores under Tf/Te; M5 reuses Tp and leaves Tf keys holding fixed non-temperature values.
+    private static let appleSiliconM3M4Cores: [SensorNamingRule] = [
+        .prefix("Te0", .cpu, .series("CPU Efficiency Core"), family: .cpuEfficiency),
+        .prefix("Tf0", .cpu, .series("CPU Performance Core"), family: .cpuPerformance),
+        .prefix("Tf4", .cpu, .series("CPU Performance Core"), family: .cpuPerformance),
+        .prefix("Tf1", .gpu, .series("GPU Sensor"), family: .gpu),
+        .prefix("Tf2", .gpu, .series("GPU Sensor"), family: .gpu),
     ]
 }

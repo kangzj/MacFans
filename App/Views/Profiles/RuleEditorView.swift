@@ -17,11 +17,15 @@ struct RuleEditorView: View {
                 titleRow
                 Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
                     GridRow {
-                        Text("When").gridColumnAlignment(.trailing).foregroundStyle(.secondary)
+                        rowLabel("When")
                         triggerControls
                     }
                     GridRow {
-                        Text("Set").gridColumnAlignment(.trailing).foregroundStyle(.secondary)
+                        rowLabel("Threshold")
+                        thresholdControls
+                    }
+                    GridRow {
+                        rowLabel("Set")
                         speedControls
                     }
                 }
@@ -35,6 +39,12 @@ struct RuleEditorView: View {
         }
     }
 
+    private func rowLabel(_ text: String) -> some View {
+        Text(text)
+            .foregroundStyle(.secondary)
+            .frame(width: 66, alignment: .trailing)
+    }
+
     private var titleRow: some View {
         HStack(spacing: 10) {
             Toggle("", isOn: $rule.isEnabled)
@@ -44,8 +54,9 @@ struct RuleEditorView: View {
             TextField("Rule name", text: $rule.name)
                 .textFieldStyle(.plain)
                 .font(.headline)
-            Spacer()
+            Spacer(minLength: 8)
             statusPill
+                .fixedSize()
             if isEditable {
                 Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
                     .buttonStyle(.borderless)
@@ -84,18 +95,20 @@ struct RuleEditorView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 140)
+            .fixedSize()
             switch rule.trigger {
             case .group(let group, let aggregate):
                 Picker("", selection: Binding(get: { group }, set: { rule.trigger = .group($0, aggregate) })) {
                     ForEach(SensorGroup.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 .labelsHidden()
+                .frame(width: 120)
                 Picker("", selection: Binding(get: { aggregate }, set: { rule.trigger = .group(group, $0) })) {
-                    Text("max").tag(Aggregate.max)
+                    Text("hottest sensor").tag(Aggregate.max)
                     Text("average").tag(Aggregate.average)
                 }
                 .labelsHidden()
+                .frame(width: 150)
             case .sensor(let id):
                 Picker("", selection: Binding(get: { id }, set: { rule.trigger = .sensor($0) })) {
                     ForEach(sensorChoices) { sensor in
@@ -103,13 +116,19 @@ struct RuleEditorView: View {
                     }
                 }
                 .labelsHidden()
-                .frame(maxWidth: 260)
+                .frame(width: 278)
             }
+        }
+    }
+
+    private var thresholdControls: some View {
+        HStack(spacing: 8) {
             Text("is above")
             temperatureField($rule.onAbove)
             Text("until below")
             temperatureField($rule.offBelow)
         }
+        .fixedSize()
     }
 
     private var speedControls: some View {
@@ -121,19 +140,19 @@ struct RuleEditorView: View {
                 }
             }
             .labelsHidden()
-            .frame(width: 140)
+            .frame(width: 120)
             Text("to")
             Picker("", selection: speedKind) {
                 ForEach(SpeedKind.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 180)
+            .fixedSize()
             switch rule.speed {
             case .percent(let value):
-                numberField(value, range: 0...100, suffix: "%") { rule.speed = .percent($0) }
+                numberField(value, range: 0...100, step: 5, suffix: "%") { rule.speed = .percent($0) }
             case .rpm(let value):
-                numberField(value, range: 0...10_000, suffix: "RPM") { rule.speed = .rpm($0) }
+                numberField(value, range: 0...10_000, step: 100, suffix: "RPM") { rule.speed = .rpm($0) }
             case .max:
                 EmptyView()
             }
@@ -159,7 +178,7 @@ struct RuleEditorView: View {
     private var fanChoice: Binding<FanSelection> {
         Binding(
             get: {
-                if case .some(let ids) = rule.fans, ids.count == 1 { return rule.fans }
+                if case .some(let ids) = rule.fans, ids.count == 1, model.monitor.fans.contains(where: { ids.contains($0.id) }) { return rule.fans }
                 return .all
             },
             set: { rule.fans = $0 }
@@ -196,24 +215,25 @@ struct RuleEditorView: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 56)
                 .multilineTextAlignment(.trailing)
-            Stepper("", value: display, in: -40...150, step: 1)
+            Stepper("", value: display, in: Formatters.converted(-40, to: unit)...Formatters.converted(150, to: unit), step: 1)
                 .labelsHidden()
             Text(unit == .celsius ? "°C" : "°F")
                 .foregroundStyle(.secondary)
         }
     }
 
-    private func numberField(_ value: Double, range: ClosedRange<Double>, suffix: String, set: @escaping (Double) -> Void) -> some View {
+    private func numberField(_ value: Double, range: ClosedRange<Double>, step: Double, suffix: String, set: @escaping (Double) -> Void) -> some View {
         let binding = Binding(get: { value }, set: { set(min(max($0, range.lowerBound), range.upperBound)) })
         return HStack(spacing: 2) {
             TextField("", value: binding, format: .number.precision(.fractionLength(0)))
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 64)
                 .multilineTextAlignment(.trailing)
-            Stepper("", value: binding, in: range, step: suffix == "%" ? 5 : 100)
+            Stepper("", value: binding, in: range, step: step)
                 .labelsHidden()
             Text(suffix)
                 .foregroundStyle(.secondary)
         }
+        .fixedSize()
     }
 }

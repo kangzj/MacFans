@@ -33,7 +33,7 @@ struct SensorsView: View {
                     Text(summaryCaption(summary)).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Sparkline(samples: model.monitor.history.samples(summary.id), tint: TemperatureTint.color(for: summary.max))
+                Sparkline(samples: model.monitor.history.samples(ReadingHistory.summaryKey(summary.family)), tint: TemperatureTint.color(for: summary.max))
                     .frame(width: 120, height: 28)
                 TemperatureText(celsius: summary.max, style: .title2)
                     .frame(width: 70, alignment: .trailing)
@@ -92,9 +92,7 @@ struct SensorsView: View {
             .buttonStyle(.plain)
             .help("Favourite sensors are offered as the menu bar readout.")
             VStack(alignment: .leading, spacing: 2) {
-                TextField("Name", text: nameBinding(sensor))
-                    .textFieldStyle(.plain)
-                    .font(.body.weight(.medium))
+                SensorNameField(name: sensor.name) { rename(sensor, to: $0) }
                 Text(sensor.id.rawValue)
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
@@ -108,21 +106,34 @@ struct SensorsView: View {
         .padding(.vertical, 2)
     }
 
-    private func nameBinding(_ sensor: Sensor) -> Binding<String> {
-        Binding(
-            get: { sensor.name },
-            set: { newName in
-                var override = model.configuration.sensorOverrides[sensor.id] ?? SensorOverride(name: nil, isFavorite: false)
-                let trimmed = newName.trimmingCharacters(in: .whitespaces)
-                override.name = trimmed.isEmpty ? nil : trimmed
-                model.configuration.sensorOverrides[sensor.id] = override
-            }
-        )
+    private func rename(_ sensor: Sensor, to newName: String) {
+        var override = model.configuration.sensorOverrides[sensor.id] ?? SensorOverride()
+        let trimmed = newName.trimmingCharacters(in: .whitespaces)
+        override.name = trimmed.isEmpty ? nil : trimmed
+        model.configuration.sensorOverrides[sensor.id] = override
     }
 
     private func toggleFavorite(_ sensor: Sensor) {
-        var override = model.configuration.sensorOverrides[sensor.id] ?? SensorOverride(name: nil, isFavorite: false)
+        var override = model.configuration.sensorOverrides[sensor.id] ?? SensorOverride()
         override.isFavorite.toggle()
         model.configuration.sensorOverrides[sensor.id] = override
+    }
+}
+
+private struct SensorNameField: View {
+    let name: String
+    let commit: (String) -> Void
+    @State private var draft = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        TextField("Name", text: $draft)
+            .textFieldStyle(.plain)
+            .font(.body.weight(.medium))
+            .focused($isFocused)
+            .onAppear { draft = name }
+            .onChange(of: name) { _, newName in if !isFocused { draft = newName } }
+            .onSubmit { commit(draft) }
+            .onChange(of: isFocused) { _, focused in if !focused { commit(draft) } }
     }
 }

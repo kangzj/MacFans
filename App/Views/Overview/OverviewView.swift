@@ -5,7 +5,13 @@ import SwiftUI
 struct OverviewView: View {
     @Environment(AppModel.self) private var model
 
-    private let heroes = [("cpu-performance", "CPU", "cpu"), ("gpu", "GPU", "rectangle.3.group"), ("memory", "Memory", "memorychip"), ("ssd", "SSD", "internaldrive"), ("battery", "Battery", "battery.100percent")]
+    private let heroes: [(family: SensorFamily, title: String, symbol: String)] = [
+        (.cpuPerformance, "CPU", "cpu"),
+        (.gpu, "GPU", "rectangle.3.group"),
+        (.memory, "Memory", "memorychip"),
+        (.ssd, "SSD", "internaldrive"),
+        (.battery, "Battery", "battery.100percent"),
+    ]
 
     var body: some View {
         ScrollView {
@@ -24,8 +30,8 @@ struct OverviewView: View {
 
     private var heroRow: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: heroes.count), spacing: 12) {
-            ForEach(heroes, id: \.0) { id, title, symbol in
-                let summary = model.monitor.summary(id)
+            ForEach(heroes, id: \.family) { family, title, symbol in
+                let summary = model.monitor.summary(family)
                 Card(title: title, symbol: symbol) {
                     TemperatureText(celsius: summary?.max, style: .largeTitle)
                     Text(caption(for: summary))
@@ -104,7 +110,7 @@ struct OverviewView: View {
 
     private var temperatureChart: some View {
         let unit = model.configuration.temperatureUnit
-        let points = ChartPoint.points(from: model.monitor.history, series: [("CPU", "cpu-performance"), ("GPU", "gpu")]) {
+        let points = ChartPoint.points(from: model.monitor.history, series: [("CPU", ReadingHistory.summaryKey(.cpuPerformance)), ("GPU", ReadingHistory.summaryKey(.gpu))]) {
             Formatters.converted($0, to: unit)
         }
         return Chart(points) { point in
@@ -114,12 +120,14 @@ struct OverviewView: View {
         }
         .chartForegroundStyleScale(["CPU": Color.orange, "GPU": Color.purple])
         .chartYAxisLabel(unit == .celsius ? "°C" : "°F")
+        .chartXScale(domain: historyDomain)
         .chartXAxis { timeAxis }
+        .chartPlotStyle { $0.padding(.trailing, 24) }
         .frame(height: 160)
     }
 
     private var rpmChart: some View {
-        let series = model.monitor.fans.map { ($0.name, ReadingHistory.fanKey($0.id.rawValue)) }
+        let series = model.monitor.fans.map { ($0.name, ReadingHistory.fanKey($0.id)) }
         let points = ChartPoint.points(from: model.monitor.history, series: series) { $0 }
         return Chart(points) { point in
             LineMark(x: .value("Time", point.time), y: .value("RPM", point.value))
@@ -127,12 +135,19 @@ struct OverviewView: View {
                 .interpolationMethod(.monotone)
         }
         .chartYAxisLabel("RPM")
+        .chartXScale(domain: historyDomain)
         .chartXAxis { timeAxis }
+        .chartPlotStyle { $0.padding(.trailing, 24) }
         .frame(height: 120)
     }
 
+    private var historyDomain: ClosedRange<Date> {
+        let now = model.monitor.lastUpdate ?? Date()
+        return now.addingTimeInterval(-ReadingHistory.window)...now
+    }
+
     private var timeAxis: some AxisContent {
-        AxisMarks(values: .automatic(desiredCount: 6)) { _ in
+        AxisMarks(values: .stride(by: .minute, count: 5)) { _ in
             AxisGridLine()
             AxisValueLabel(format: .dateTime.hour().minute())
         }
