@@ -183,3 +183,4 @@ The shipped code follows this design with a few renamed units.
 `SensorPoller` became `ThermalMonitor` (backed by the `SMCReader` actor), `ProfileStore` became `ConfigurationStore`, and the per-tick decision logic lives in `ControlPlanner` on top of `RuleEngine`.
 The persistent manual-control banner from §4.4 was replaced by the mode status line on the Overview and the mode picker in the toolbar, which the user preferred.
 The Overview was simplified to two cards after user feedback; charts moved to a History tab.
+The project was renamed from MacFans to Fanwright on 2026-09-11; identifiers in this document keep the original names.

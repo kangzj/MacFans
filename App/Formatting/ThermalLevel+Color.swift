@@ -1,4 +1,4 @@
-import MacFansCore
+import FanwrightCore
 import SwiftUI
 
 extension ThermalLevel {

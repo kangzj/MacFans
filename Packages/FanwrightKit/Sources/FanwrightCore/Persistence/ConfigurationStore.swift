@@ -4,7 +4,7 @@ public final class ConfigurationStore: Sendable {
     public static var defaultDirectory: URL {
         FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("MacFans", isDirectory: true)
+            .appendingPathComponent("Fanwright", isDirectory: true)
     }
 
     private let directory: URL

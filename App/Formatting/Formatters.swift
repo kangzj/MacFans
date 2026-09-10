@@ -1,5 +1,5 @@
 import Foundation
-import MacFansCore
+import FanwrightCore
 
 enum Formatters {
     private static let rpmFormatter: NumberFormatter = {

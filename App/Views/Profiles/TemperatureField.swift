@@ -1,4 +1,4 @@
-import MacFansCore
+import FanwrightCore
 import SwiftUI
 
 struct TemperatureField: View {

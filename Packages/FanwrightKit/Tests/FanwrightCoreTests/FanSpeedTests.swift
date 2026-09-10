@@ -1,5 +1,5 @@
 import Foundation
-import MacFansCore
+import FanwrightCore
 import Testing
 
 @Suite struct FanSpeedTests {

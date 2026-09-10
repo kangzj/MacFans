@@ -1,5 +1,5 @@
 import Foundation
-import MacFansCore
+import FanwrightCore
 import Observation
 import SMCKit
 
@@ -76,7 +76,7 @@ final class ThermalMonitor {
                 keys = await reader.temperatureKeys.map(\.string)
                 sensors = SensorCatalog.sensors(for: keys, overrides: overrides)
             } catch {
-                availability = .unavailable("This Mac does not expose an SMC that MacFans can read (\(error.localizedDescription)).")
+                availability = .unavailable("This Mac does not expose an SMC that Fanwright can read (\(error.localizedDescription)).")
                 return
             }
         }

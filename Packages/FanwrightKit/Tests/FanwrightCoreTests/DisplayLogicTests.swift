@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MacFansCore
+@testable import FanwrightCore
 
 @Suite struct ThermalLevelTests {
     @Test func thresholds() {

@@ -11,7 +11,7 @@ extension HelperClient.Status {
     var callToAction: String? {
         switch self {
         case .enabled: nil
-        case .requiresApproval: "Approve MacFans Helper in System Settings › Login Items to enable fan control."
+        case .requiresApproval: "Approve Fanwright Helper in System Settings › Login Items to enable fan control."
         case .notRegistered, .notFound: "Fan control needs a small privileged helper. Reading sensors works without it."
         }
     }

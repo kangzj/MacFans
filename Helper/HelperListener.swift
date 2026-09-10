@@ -12,7 +12,7 @@ final class HelperListener: NSObject, NSXPCListenerDelegate {
 
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
         connection.setCodeSigningRequirement(requirement)
-        connection.exportedInterface = NSXPCInterface(with: MacFansHelperProtocol.self)
+        connection.exportedInterface = NSXPCInterface(with: FanwrightHelperProtocol.self)
         connection.exportedObject = service
         connection.resume()
         return true

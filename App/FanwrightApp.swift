@@ -2,11 +2,11 @@ import AppKit
 import SwiftUI
 
 @main
-struct MacFansApp: App {
+struct FanwrightApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
 
     var body: some Scene {
-        Window("MacFans", id: MainWindow.id) {
+        Window("Fanwright", id: MainWindow.id) {
             MainWindow()
                 .environment(appDelegate.model)
         }

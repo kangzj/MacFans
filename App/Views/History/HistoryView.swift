@@ -1,5 +1,5 @@
 import Charts
-import MacFansCore
+import FanwrightCore
 import SwiftUI
 
 struct HistoryView: View {
@@ -12,7 +12,7 @@ struct HistoryView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Card(title: "Temperature", symbol: "thermometer.medium") { temperatureChart }
                 Card(title: "Fan Speed", symbol: "fanblades") { rpmChart }
-                Text("MacFans keeps the last 30 minutes in memory while it runs.")
+                Text("Fanwright keeps the last 30 minutes in memory while it runs.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }

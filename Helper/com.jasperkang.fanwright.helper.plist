@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>com.jasperkang.macfans.helper</string>
+	<string>com.jasperkang.fanwright.helper</string>
 	<key>BundleProgram</key>
-	<string>Contents/MacOS/MacFansHelper</string>
+	<string>Contents/MacOS/FanwrightHelper</string>
 	<key>MachServices</key>
 	<dict>
-		<key>com.jasperkang.macfans.helper</key>
+		<key>com.jasperkang.fanwright.helper</key>
 		<true/>
 	</dict>
 	<key>AssociatedBundleIdentifiers</key>
 	<array>
-		<string>com.jasperkang.macfans</string>
+		<string>com.jasperkang.fanwright</string>
 	</array>
 	<key>ProcessType</key>
 	<string>Interactive</string>

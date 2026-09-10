@@ -1,12 +1,12 @@
 #!/bin/zsh
-# Builds a Release MacFans.app, signs it, packages a DMG, and optionally notarizes it.
+# Builds a Release Fanwright.app, signs it, packages a DMG, and optionally notarizes it.
 #
 #   scripts/release.sh                                   # ad-hoc signed, runs only on this Mac
 #   scripts/release.sh --identity "Developer ID Application: Jasper Kang (TEAMID)"
-#   scripts/release.sh --identity "..." --notarize-profile macfans
+#   scripts/release.sh --identity "..." --notarize-profile fanwright
 #
 # The notarization profile is created once with:
-#   xcrun notarytool store-credentials macfans --apple-id you@example.com --team-id TEAMID --password app-specific-password
+#   xcrun notarytool store-credentials fanwright --apple-id you@example.com --team-id TEAMID --password app-specific-password
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -28,11 +28,11 @@ fi
 
 xcodegen generate --quiet
 rm -rf build/Release dist
-xcodebuild -project MacFans.xcodeproj -scheme MacFans -configuration Release -derivedDataPath build/Release \
+xcodebuild -project Fanwright.xcodeproj -scheme Fanwright -configuration Release -derivedDataPath build/Release \
   CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" OTHER_CODE_SIGN_FLAGS="--timestamp" build 2>&1 \
   | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
 
-app="build/Release/Build/Products/Release/MacFans.app"
+app="build/Release/Build/Products/Release/Fanwright.app"
 [[ -d "$app" ]] || { echo "Build failed" >&2; exit 1; }
 version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$app/Contents/Info.plist")
 codesign --verify --deep --strict --verbose=2 "$app"
@@ -40,8 +40,8 @@ codesign --verify --deep --strict --verbose=2 "$app"
 mkdir -p dist/stage
 cp -R "$app" dist/stage/
 ln -s /Applications dist/stage/Applications
-dmg="dist/MacFans-$version.dmg"
-hdiutil create -volname "MacFans" -srcfolder dist/stage -ov -format UDZO "$dmg" >/dev/null
+dmg="dist/Fanwright-$version.dmg"
+hdiutil create -volname "Fanwright" -srcfolder dist/stage -ov -format UDZO "$dmg" >/dev/null
 rm -rf dist/stage
 
 if [[ -n "$notarize_profile" ]]; then

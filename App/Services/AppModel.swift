@@ -1,6 +1,6 @@
 import AppKit
 import Foundation
-import MacFansCore
+import FanwrightCore
 import Observation
 
 @MainActor

@@ -1,5 +1,5 @@
 import Foundation
-import MacFansCore
+import FanwrightCore
 
 extension ControlStatus {
     var summary: String {

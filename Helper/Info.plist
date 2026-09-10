@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>com.jasperkang.macfans.helper</string>
+	<string>com.jasperkang.fanwright.helper</string>
 	<key>CFBundleName</key>
-	<string>MacFansHelper</string>
+	<string>FanwrightHelper</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundleShortVersionString</key>

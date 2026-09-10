@@ -84,7 +84,7 @@ final class HelperClient: FanCommandSink {
     }
 
     private func callExpectingNoError(
-        _ invoke: (MacFansHelperProtocol, @escaping @Sendable (String?) -> Void) -> Void
+        _ invoke: (FanwrightHelperProtocol, @escaping @Sendable (String?) -> Void) -> Void
     ) async throws {
         if let message: String = try await call(invoke) {
             throw ClientError.remote(message)
@@ -92,7 +92,7 @@ final class HelperClient: FanCommandSink {
     }
 
     private func call<Reply: Sendable>(
-        _ invoke: (MacFansHelperProtocol, @escaping @Sendable (Reply) -> Void) -> Void
+        _ invoke: (FanwrightHelperProtocol, @escaping @Sendable (Reply) -> Void) -> Void
     ) async throws -> Reply {
         guard isEnabled else { throw ClientError.helperNotEnabled }
         let connection = activeConnection()
@@ -110,7 +110,7 @@ final class HelperClient: FanCommandSink {
             }
             let proxy = connection.remoteObjectProxyWithErrorHandler { error in
                 settle(.failure(ClientError.transport(error.localizedDescription)))
-            } as! MacFansHelperProtocol
+            } as! FanwrightHelperProtocol
             invoke(proxy) { reply in settle(.success(reply)) }
             timeout.withLock {
                 $0 = Task {
@@ -124,7 +124,7 @@ final class HelperClient: FanCommandSink {
     private func activeConnection() -> NSXPCConnection {
         if let connection { return connection }
         let connection = NSXPCConnection(machServiceName: helperMachServiceName, options: .privileged)
-        connection.remoteObjectInterface = NSXPCInterface(with: MacFansHelperProtocol.self)
+        connection.remoteObjectInterface = NSXPCInterface(with: FanwrightHelperProtocol.self)
         connection.invalidationHandler = { [weak self] in
             Task { @MainActor in self?.connection = nil }
         }

@@ -1,4 +1,4 @@
-import MacFansCore
+import FanwrightCore
 import SwiftUI
 
 struct MenuBarPanel: View {
@@ -21,7 +21,7 @@ struct MenuBarPanel: View {
 
     private var header: some View {
         HStack {
-            Text("MacFans")
+            Text("Fanwright")
                 .font(.title3.weight(.semibold))
             Spacer()
             Label(model.controlStatus.summary, systemImage: model.controller.mode.symbolName)
@@ -90,7 +90,7 @@ struct MenuBarPanel: View {
 
     private var footer: some View {
         HStack {
-            Button("Open MacFans") {
+            Button("Open Fanwright") {
                 openWindow(id: MainWindow.id)
                 NSApp.activate()
             }

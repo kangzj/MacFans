@@ -2,17 +2,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "MacFansKit",
+    name: "FanwrightKit",
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "SMCKit", targets: ["SMCKit"]),
-        .library(name: "MacFansCore", targets: ["MacFansCore"]),
+        .library(name: "FanwrightCore", targets: ["FanwrightCore"]),
     ],
     targets: [
         .target(name: "CSMC"),
         .target(name: "SMCKit", dependencies: ["CSMC"], linkerSettings: [.linkedFramework("IOKit")]),
-        .target(name: "MacFansCore"),
+        .target(name: "FanwrightCore"),
         .testTarget(name: "SMCKitTests", dependencies: ["SMCKit"]),
-        .testTarget(name: "MacFansCoreTests", dependencies: ["MacFansCore"]),
+        .testTarget(name: "FanwrightCoreTests", dependencies: ["FanwrightCore"]),
     ]
 )

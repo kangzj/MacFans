@@ -1,4 +1,4 @@
-import MacFansCore
+import FanwrightCore
 
 extension ControlMode {
     var title: String {

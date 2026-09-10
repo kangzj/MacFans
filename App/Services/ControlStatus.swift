@@ -1,5 +1,5 @@
 import Foundation
-import MacFansCore
+import FanwrightCore
 
 enum ControlStatus: Equatable {
     case auto

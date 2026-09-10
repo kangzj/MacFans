@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MainWindow: View {
-    static let id = "macfans.main"
+    static let id = "fanwright.main"
 
     @Environment(AppModel.self) private var model
     @State private var selection: SidebarItem = .overview

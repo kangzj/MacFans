@@ -1,6 +1,6 @@
 import Foundation
 
-final class HelperService: NSObject, MacFansHelperProtocol {
+final class HelperService: NSObject, FanwrightHelperProtocol {
     private let writer: FanWriter
     private let watchdog: Watchdog
 

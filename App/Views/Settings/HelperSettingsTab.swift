@@ -31,7 +31,7 @@ struct HelperSettingsTab: View {
                     Spacer()
                     Button("Refresh") { model.helper.refreshStatus() }
                 }
-                Text("MacFans installs a small root daemon that is the only component allowed to change fan speed. It clamps every request to the fan's hardware range and returns fans to Auto if the app stops responding for 10 seconds.")
+                Text("Fanwright installs a small root daemon that is the only component allowed to change fan speed. It clamps every request to the fan's hardware range and returns fans to Auto if the app stops responding for 10 seconds.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

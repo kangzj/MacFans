@@ -1,4 +1,4 @@
-import MacFansCore
+import FanwrightCore
 import ServiceManagement
 import SwiftUI
 
@@ -43,7 +43,7 @@ struct GeneralSettingsTab: View {
                     Text(launchAtLoginError).font(.caption).foregroundStyle(.red)
                 }
                 Toggle("Resume last control mode on launch", isOn: $model.configuration.startInModeOnLaunch)
-                Text("When off, MacFans always starts in Auto so fans are never forced without you noticing.")
+                Text("When off, Fanwright always starts in Auto so fans are never forced without you noticing.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
