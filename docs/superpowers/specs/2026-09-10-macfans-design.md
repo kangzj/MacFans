@@ -176,3 +176,10 @@ MacFans/
 1. Run `sudo xcodebuild -license accept` so the project can be built with `xcodebuild`.
 2. Confirm minimum macOS 15 and Apple Silicon-first is acceptable.
 3. Confirm the rule model in §4.2 (threshold rules with hysteresis, no curves in v1).
+
+## 11. Implementation notes (2026-09-11)
+
+The shipped code follows this design with a few renamed units.
+`SensorPoller` became `ThermalMonitor` (backed by the `SMCReader` actor), `ProfileStore` became `ConfigurationStore`, and the per-tick decision logic lives in `ControlPlanner` on top of `RuleEngine`.
+The persistent manual-control banner from §4.4 was replaced by the mode status line on the Overview and the mode picker in the toolbar, which the user preferred.
+The Overview was simplified to two cards after user feedback; charts moved to a History tab.
