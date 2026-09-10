@@ -64,4 +64,19 @@ import Testing
         #expect(AppConfiguration.default.profile(id: Profile.cool.id) == Profile.cool)
         #expect(AppConfiguration.default.profile(id: UUID()) == nil)
     }
+
+    @Test func builtInProfilesAreEditableAndResettable() {
+        var config = AppConfiguration.default
+        let id = Profile.quiet.id
+        #expect(!config.isModifiedBuiltIn(id: id))
+        config.updateProfile(id: id) { $0.name = "Library" }
+        #expect(config.profile(id: id)?.name == "Library")
+        #expect(config.profile(id: id)?.isBuiltIn == true)
+        #expect(config.isModifiedBuiltIn(id: id))
+        #expect(config.allProfiles.count == Profile.builtIns.count)
+        #expect(config.allProfiles.first?.id == id)
+        config.resetBuiltInProfile(id: id)
+        #expect(config.profile(id: id)?.name == Profile.quiet.name)
+        #expect(!config.isModifiedBuiltIn(id: id))
+    }
 }

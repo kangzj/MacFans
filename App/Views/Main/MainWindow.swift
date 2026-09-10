@@ -53,13 +53,14 @@ struct SidebarCommands: Commands {
 }
 
 struct MainWindow: View {
-    static let id = "main"
+    static let id = "dashboard"
 
     @Environment(AppModel.self) private var model
     @State private var selection: SidebarItem = .overview
+    @State private var columnVisibility = NavigationSplitViewVisibility.detailOnly
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             List(SidebarItem.allCases, selection: $selection) { item in
                 Label(item.title, systemImage: item.symbolName)
             }
@@ -84,7 +85,7 @@ struct MainWindow: View {
                 }
             }
         }
-        .frame(minWidth: 1040, minHeight: 620)
+        .frame(minWidth: 800, idealWidth: 860, maxWidth: .infinity, minHeight: 360, idealHeight: 370, maxHeight: .infinity)
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.sidebarSelection, $selection)
     }

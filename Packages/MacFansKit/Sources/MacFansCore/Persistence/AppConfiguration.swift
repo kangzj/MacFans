@@ -17,11 +17,31 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var startInModeOnLaunch = false
 
     public var allProfiles: [Profile] {
-        Profile.builtIns + profiles
+        let builtInIDs = Set(Profile.builtIns.map(\.id))
+        let builtIns = Profile.builtIns.map { builtIn in profiles.first { $0.id == builtIn.id } ?? builtIn }
+        return builtIns + profiles.filter { !builtInIDs.contains($0.id) }
     }
 
     public func profile(id: UUID) -> Profile? {
         allProfiles.first { $0.id == id }
+    }
+
+    public func isModifiedBuiltIn(id: UUID) -> Bool {
+        Profile.builtIns.contains { $0.id == id } && profiles.contains { $0.id == id }
+    }
+
+    public mutating func updateProfile(id: UUID, _ change: (inout Profile) -> Void) {
+        if let index = profiles.firstIndex(where: { $0.id == id }) {
+            change(&profiles[index])
+        } else if var builtIn = Profile.builtIns.first(where: { $0.id == id }) {
+            change(&builtIn)
+            profiles.append(builtIn)
+        }
+    }
+
+    public mutating func resetBuiltInProfile(id: UUID) {
+        guard Profile.builtIns.contains(where: { $0.id == id }) else { return }
+        profiles.removeAll { $0.id == id }
     }
 }
 

@@ -5,7 +5,6 @@ struct RuleEditorView: View {
     @Environment(AppModel.self) private var model
     @Binding var rule: Rule
     let profile: Profile
-    let isEditable: Bool
     let onDelete: () -> Void
 
     private enum TriggerKind: String, CaseIterable { case group = "Group", sensor = "Sensor" }
@@ -35,7 +34,6 @@ struct RuleEditorView: View {
                         .foregroundStyle(.red)
                 }
             }
-            .disabled(!isEditable)
         }
     }
 
@@ -57,11 +55,9 @@ struct RuleEditorView: View {
             Spacer(minLength: 8)
             statusPill
                 .fixedSize()
-            if isEditable {
-                Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
-                    .buttonStyle(.borderless)
-                    .help("Delete rule")
-            }
+            Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
+                .buttonStyle(.borderless)
+                .help("Delete rule")
         }
     }
 

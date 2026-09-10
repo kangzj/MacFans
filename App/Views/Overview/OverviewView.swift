@@ -5,22 +5,16 @@ struct OverviewView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        ScrollView {
-            if case .unavailable(let message) = model.monitor.availability {
-                ContentUnavailableView("Sensors Unavailable", systemImage: "thermometer.medium.slash", description: Text(message))
-            } else {
-                VStack(spacing: 16) {
-                    HStack(alignment: .top, spacing: 16) {
-                        ThermalCard()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        FansCard()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                    ModeCard()
-                }
-                .padding(20)
+        if case .unavailable(let message) = model.monitor.availability {
+            ContentUnavailableView("Sensors Unavailable", systemImage: "thermometer.medium.slash", description: Text(message))
+        } else {
+            HStack(alignment: .top, spacing: 16) {
+                ThermalCard()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                FansCard()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .padding(16)
         }
     }
 }
@@ -42,8 +36,8 @@ private struct ThermalCard: View {
 
     var body: some View {
         Card(title: "Temperature", symbol: "thermometer.medium") {
-            HStack(spacing: 28) {
-                TemperatureRing(celsius: headline)
+            HStack(spacing: 24) {
+                TemperatureRing(celsius: headline, diameter: 150)
                 VStack(spacing: 10) {
                     ForEach(readings, id: \.family) { title, family, symbol in
                         readingRow(title: title, symbol: symbol, celsius: model.monitor.summary(family)?.max)
@@ -82,11 +76,16 @@ private struct FansCard: View {
         Card(title: "Fans", symbol: "fanblades") {
             HStack(spacing: 24) {
                 ForEach(model.monitor.fans) { fan in
-                    FanGauge(fan: fan, diameter: 118)
+                    FanGauge(fan: fan, diameter: 112)
                         .frame(maxWidth: .infinity)
                 }
             }
             .padding(.vertical, 4)
+            HStack(spacing: 12) {
+                modeDetail
+                Spacer(minLength: 0)
+                boostButton
+            }
             Spacer(minLength: 0)
             if let first = model.monitor.fans.first {
                 TrendStrip(
@@ -94,31 +93,6 @@ private struct FansCard: View {
                     samples: model.monitor.history.samples(ReadingHistory.fanKey(first.id)),
                     tint: .blue
                 )
-            }
-        }
-    }
-}
-
-private struct ModeCard: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Label("Fan Control", systemImage: "slider.horizontal.3")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    boostButton
-                }
-                HStack(spacing: 12) {
-                    ForEach(ControlMode.allCases, id: \.self) { mode in
-                        ModeTile(mode: mode, isSelected: model.controller.mode == mode) { model.setMode(mode) }
-                    }
-                }
-                .fixedSize(horizontal: false, vertical: true)
-                detail
             }
         }
     }
@@ -132,48 +106,39 @@ private struct ModeCard: View {
         .controlSize(.small)
         .tint(model.controller.isBoosting ? .orange : nil)
         .disabled(!model.helper.isEnabled)
-        .help("Run every fan at maximum speed for five minutes.")
+        .help("Run every fan at maximum speed for five minutes, then return to the current mode.")
     }
 
     @ViewBuilder
-    private var detail: some View {
-        HStack(spacing: 16) {
-            switch model.controller.mode {
-            case .auto:
-                Text(statusLine)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            case .constant:
-                constantSlider
-            case .custom:
-                ProfilePicker()
-                    .labelsHidden()
-                    .fixedSize()
-                Text(statusLine)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .frame(minHeight: 32)
-    }
-
-    private var statusLine: String {
-        if model.controller.isBoosting, let until = model.controller.boostUntil {
-            return "Full blast until \(until.formatted(date: .omitted, time: .shortened))."
-        }
+    private var modeDetail: some View {
         switch model.controller.mode {
         case .auto:
-            return "macOS is managing the fans. Auto is also where MacFans returns whenever it quits or the Mac sleeps."
+            statusText(model.controller.isBoosting ? boostText : "Auto · managed by macOS.")
         case .constant:
-            return ""
+            constantSlider
         case .custom:
-            guard let evaluation = model.controller.lastEvaluation else { return "Evaluating rules…" }
-            let active = model.activeProfile.rules.filter { evaluation.state.activeRuleIDs.contains($0.id) }
-            if !active.isEmpty { return active.map(\.name).joined(separator: ", ") + (active.count == 1 ? " is active." : " are active.") }
-            let stillForced = evaluation.commands.values.contains { $0 != .auto }
-            return stillForced ? "Rules released, easing back to Auto." : "No rule active. Fans are on Auto until one triggers."
+            statusText(model.controller.isBoosting ? boostText : ruleStatus)
         }
+    }
+
+    private func statusText(_ text: String) -> some View {
+        Text(text)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .frame(minHeight: 22)
+    }
+
+    private var boostText: String {
+        "Full blast until \(model.controller.boostUntil?.formatted(date: .omitted, time: .shortened) ?? "")."
+    }
+
+    private var ruleStatus: String {
+        guard let evaluation = model.controller.lastEvaluation else { return "Evaluating “\(model.activeProfile.name)”…" }
+        let active = model.activeProfile.rules.filter { evaluation.state.activeRuleIDs.contains($0.id) }
+        if !active.isEmpty { return active.map(\.name).joined(separator: ", ") + (active.count == 1 ? " is active." : " are active.") }
+        let stillForced = evaluation.commands.values.contains { $0 != .auto }
+        return stillForced ? "Rules released, easing back to Auto." : "Custom · “\(model.activeProfile.name)”, no rule active."
     }
 
     private var constantSlider: some View {
@@ -185,21 +150,15 @@ private struct ModeCard: View {
             },
             set: { value in fans.forEach { model.setConstantSpeed(.percent(value), for: $0.id) } }
         )
-        return HStack(spacing: 14) {
-            Image(systemName: "fanblades")
-                .foregroundStyle(.secondary)
+        return HStack(spacing: 10) {
             Slider(value: percent, in: 0...100, step: 1)
-                .frame(maxWidth: 420)
-            Text(sliderCaption(percent.wrappedValue))
+            Text(Formatters.percent(percent.wrappedValue))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
+                .frame(width: 44, alignment: .trailing)
         }
-    }
-
-    private func sliderCaption(_ percent: Double) -> String {
-        let rpms = model.monitor.fans.map { Formatters.rpm(FanSpeed.percent(percent).rpm(for: $0.limits)) }
-        return "\(Formatters.percent(percent)) · " + rpms.joined(separator: " / ")
+        .frame(minHeight: 22)
     }
 }
 

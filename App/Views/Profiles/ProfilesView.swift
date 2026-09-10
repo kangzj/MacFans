@@ -28,10 +28,10 @@ struct ProfilesView: View {
                             .foregroundStyle(.green)
                             .help("Active profile")
                     }
-                    if profile.isBuiltIn {
-                        Image(systemName: "lock.fill")
+                    if model.configuration.isModifiedBuiltIn(id: profile.id) {
+                        Image(systemName: "pencil")
                             .foregroundStyle(.tertiary)
-                            .help("Built-in profiles can be duplicated but not edited.")
+                            .help("Built-in profile with your changes. Reset to Default restores it.")
                     }
                 }
                 .tag(profile.id)
@@ -57,7 +57,7 @@ struct ProfilesView: View {
     @ViewBuilder
     private var editor: some View {
         if let profile = selectedProfile {
-            ProfileEditor(profile: profile, isEditable: !profile.isBuiltIn, onDuplicate: duplicateSelected)
+            ProfileEditor(profile: profile, onDuplicate: duplicateSelected)
                 .id(profile.id)
         } else {
             ContentUnavailableView("Select a Profile", systemImage: "slider.horizontal.3", description: Text("Profiles hold the rules Custom mode follows."))
@@ -111,7 +111,6 @@ struct ProfilesView: View {
 private struct ProfileEditor: View {
     @Environment(AppModel.self) private var model
     let profile: Profile
-    let isEditable: Bool
     let onDuplicate: () -> Void
 
     var body: some View {
@@ -123,12 +122,10 @@ private struct ProfileEditor: View {
                         .frame(height: 200)
                 } else {
                     ForEach(profile.rules) { rule in
-                        RuleEditorView(rule: ruleBinding(rule), profile: profile, isEditable: isEditable, onDelete: { removeRule(rule) })
+                        RuleEditorView(rule: ruleBinding(rule), profile: profile, onDelete: { removeRule(rule) })
                     }
                 }
-                if isEditable {
-                    Button { addRule() } label: { Label("Add Rule", systemImage: "plus") }
-                }
+                Button { addRule() } label: { Label("Add Rule", systemImage: "plus") }
             }
             .padding(20)
         }
@@ -139,11 +136,11 @@ private struct ProfileEditor: View {
             TextField("Profile name", text: nameBinding)
                 .textFieldStyle(.roundedBorder)
                 .font(.title3)
-                .disabled(!isEditable)
                 .frame(maxWidth: 320)
             Spacer()
-            if !isEditable {
-                Button("Duplicate to Edit", action: onDuplicate)
+            if model.configuration.isModifiedBuiltIn(id: profile.id) {
+                Button("Reset to Default") { model.configuration.resetBuiltInProfile(id: profile.id) }
+                    .help("Discard your changes and restore the built-in rules.")
             }
             if profile.id == model.configuration.activeProfileID {
                 Label("Active", systemImage: "checkmark.circle.fill")
@@ -184,7 +181,6 @@ private struct ProfileEditor: View {
     }
 
     private func update(_ change: (inout Profile) -> Void) {
-        guard let index = model.configuration.profiles.firstIndex(where: { $0.id == profile.id }) else { return }
-        change(&model.configuration.profiles[index])
+        model.configuration.updateProfile(id: profile.id, change)
     }
 }
