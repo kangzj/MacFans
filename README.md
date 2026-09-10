@@ -44,6 +44,7 @@ scripts/build.sh Release    # Release build
 ```
 
 The Xcode project is generated from `project.yml`; do not edit `MacFans.xcodeproj` by hand.
+The app icon is drawn by `scripts/render-icon.swift`; run `swift scripts/render-icon.swift App/Assets.xcassets/AppIcon.appiconset` after changing it.
 Builds are ad-hoc signed, so the helper accepts connections based on the app's bundle identifier.
 For distribution, sign both targets with a Developer ID and tighten the requirement in `Helper/HelperListener.swift`.
 
