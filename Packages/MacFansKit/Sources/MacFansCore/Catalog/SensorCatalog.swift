@@ -1,6 +1,8 @@
 public enum SensorCatalog {
+    public static let plausibleRange: ClosedRange<Double> = -40...150
+
     public static func isPlausible(celsius: Double) -> Bool {
-        celsius != 0 && (-40...150).contains(celsius)
+        celsius != 0 && plausibleRange.contains(celsius)
     }
 
     public static func sensors(for keys: [String], overrides: [SensorID: SensorOverride] = [:]) -> [Sensor] {

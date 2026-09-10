@@ -6,8 +6,6 @@ struct MenuBarPanel: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
-    private let readouts: [(family: SensorFamily, title: String)] = [(.cpuPerformance, "CPU"), (.gpu, "GPU"), (.ssd, "SSD"), (.battery, "Battery")]
-
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
@@ -26,7 +24,7 @@ struct MenuBarPanel: View {
             Text("MacFans")
                 .font(.title3.weight(.semibold))
             Spacer()
-            Label(modeSummary, systemImage: model.controller.mode.symbolName)
+            Label(model.controlStatus.summary, systemImage: model.controller.mode.symbolName)
                 .font(.caption.weight(.medium))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -34,18 +32,11 @@ struct MenuBarPanel: View {
         }
     }
 
-    private var modeSummary: String {
-        switch model.controller.mode {
-        case .custom: "Custom · \(model.activeProfile.name)"
-        default: model.controller.mode.title
-        }
-    }
-
     private var temperatureGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(readouts, id: \.family) { family, title in
+            ForEach(SensorFamily.headlineFamilies, id: \.self) { family in
                 HStack {
-                    Text(title)
+                    Text(family.shortTitle)
                         .foregroundStyle(.secondary)
                     Spacer()
                     TemperatureText(celsius: model.monitor.summary(family)?.max, style: .title3)
@@ -70,7 +61,7 @@ struct MenuBarPanel: View {
                             .font(.body.weight(.medium))
                             .monospacedDigit()
                             .contentTransition(.numericText())
-                        Text(fan.isForced ? "Target \(Formatters.rpm(fan.targetRPM))" : "System controlled")
+                        Text(fan.menuBarDescription)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }

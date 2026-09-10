@@ -45,6 +45,55 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
         guard Profile.builtIns.contains(where: { $0.id == id }) else { return }
         profiles.removeAll { $0.id == id }
     }
+
+    @discardableResult
+    public mutating func addProfile(named base: String = "New Profile") -> Profile {
+        let profile = Profile(id: UUID(), name: uniqueProfileName(base), rules: [], isBuiltIn: false)
+        profiles.append(profile)
+        return profile
+    }
+
+    @discardableResult
+    public mutating func duplicateProfile(id: UUID) -> Profile? {
+        guard let source = profile(id: id) else { return nil }
+        let copy = Profile(
+            id: UUID(),
+            name: uniqueProfileName("\(source.name) Copy"),
+            rules: source.rules.map { rule in
+                var rule = rule
+                rule.id = UUID()
+                return rule
+            },
+            isBuiltIn: false
+        )
+        profiles.append(copy)
+        return copy
+    }
+
+    public func canDeleteProfile(id: UUID) -> Bool {
+        guard let profile = profile(id: id) else { return false }
+        return !profile.isBuiltIn && id != activeProfileID
+    }
+
+    public mutating func deleteProfile(id: UUID) {
+        guard canDeleteProfile(id: id) else { return }
+        profiles.removeAll { $0.id == id }
+    }
+
+    public func uniqueProfileName(_ base: String) -> String {
+        let names = Set(allProfiles.map(\.name))
+        guard names.contains(base) else { return base }
+        return (2...).lazy.map { "\(base) \($0)" }.first { !names.contains($0) } ?? base
+    }
+
+    public mutating func setSensorName(_ name: String?, for id: SensorID) {
+        let trimmed = name?.trimmingCharacters(in: .whitespaces)
+        sensorOverrides[id, default: SensorOverride()].name = (trimmed?.isEmpty ?? true) ? nil : trimmed
+    }
+
+    public mutating func toggleFavorite(_ id: SensorID) {
+        sensorOverrides[id, default: SensorOverride()].isFavorite.toggle()
+    }
 }
 
 extension AppConfiguration {

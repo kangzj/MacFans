@@ -34,7 +34,5 @@ extension Profile {
         isBuiltIn: true
     )
 
-    public static var builtIns: [Profile] {
-        [quiet, balanced, cool]
-    }
+    public static let builtIns: [Profile] = [quiet, balanced, cool]
 }

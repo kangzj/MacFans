@@ -51,4 +51,6 @@ if [[ -n "$notarize_profile" ]]; then
 fi
 
 echo "Release: $dmg"
-[[ "$identity" == "-" ]] && echo "Ad-hoc signed: this DMG runs on this Mac only. Pass --identity for a distributable build."
+if [[ "$identity" == "-" ]]; then
+  echo "Ad-hoc signed: other Macs need the Open Anyway steps from the README. Pass --identity for a distributable build."
+fi

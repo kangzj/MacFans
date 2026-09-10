@@ -14,4 +14,12 @@ public struct FanState: Identifiable, Codable, Hashable, Sendable {
         self.targetRPM = targetRPM
         self.isForced = isForced
     }
+
+    public static func defaultName(index: Int, count: Int) -> String {
+        switch (count, index) {
+        case (2, 0): "Left Fan"
+        case (2, 1): "Right Fan"
+        default: "Fan \(index + 1)"
+        }
+    }
 }

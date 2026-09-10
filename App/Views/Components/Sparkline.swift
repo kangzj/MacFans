@@ -3,15 +3,15 @@ import SwiftUI
 
 struct Sparkline: View {
     let samples: [HistorySample]
-    var tint: Color = .accentColor
+    let tint: Color
 
     var body: some View {
         let domain = yDomain
         Chart(samples) { sample in
-            AreaMark(x: .value("Time", sample.id), yStart: .value("Floor", domain.lowerBound), yEnd: .value("Value", sample.value))
+            AreaMark(x: .value("Time", sample.time), yStart: .value("Floor", domain.lowerBound), yEnd: .value("Value", sample.value))
                 .foregroundStyle(tint.opacity(0.15))
                 .interpolationMethod(.monotone)
-            LineMark(x: .value("Time", sample.id), y: .value("Value", sample.value))
+            LineMark(x: .value("Time", sample.time), y: .value("Value", sample.value))
                 .foregroundStyle(tint)
                 .lineStyle(StrokeStyle(lineWidth: 1.5))
                 .interpolationMethod(.monotone)

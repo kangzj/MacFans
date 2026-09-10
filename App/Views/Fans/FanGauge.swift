@@ -3,7 +3,7 @@ import SwiftUI
 
 struct FanGauge: View {
     let fan: FanState
-    var diameter: CGFloat = 120
+    let diameter: CGFloat
 
     private var fraction: Double {
         guard fan.limits.maxRPM > 0 else { return 0 }
@@ -26,7 +26,7 @@ struct FanGauge: View {
             }
             .frame(width: diameter, height: diameter)
             .overlay(alignment: .bottom) {
-                Text(fan.isForced ? "Target \(Formatters.rpm(fan.targetRPM))" : "Auto")
+                Text(fan.targetDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .offset(y: 4)

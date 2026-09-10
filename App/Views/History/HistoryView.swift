@@ -3,6 +3,8 @@ import MacFansCore
 import SwiftUI
 
 struct HistoryView: View {
+    private static let axisLabelCutoff: TimeInterval = 90
+
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -20,8 +22,8 @@ struct HistoryView: View {
 
     private var temperatureChart: some View {
         let unit = model.configuration.temperatureUnit
-        let points = ChartPoint.points(from: model.monitor.history, series: [("CPU", ReadingHistory.summaryKey(.cpuPerformance)), ("GPU", ReadingHistory.summaryKey(.gpu))]) {
-            Formatters.converted($0, to: unit)
+        let points = ChartPoint.points(from: model.monitor.history, series: [("CPU", .summary(.cpuPerformance)), ("GPU", .summary(.gpu))]) {
+            unit.convert(celsius: $0)
         }
         return Chart(points) { point in
             LineMark(x: .value("Time", point.time), y: .value("Temperature", point.value))
@@ -29,14 +31,14 @@ struct HistoryView: View {
                 .interpolationMethod(.monotone)
         }
         .chartForegroundStyleScale(["CPU": Color.orange, "GPU": Color.purple])
-        .chartYAxisLabel(unit == .celsius ? "°C" : "°F")
+        .chartYAxisLabel(unit.symbol)
         .chartXScale(domain: historyDomain)
         .chartXAxis { timeAxis }
         .frame(height: 220)
     }
 
     private var rpmChart: some View {
-        let series = model.monitor.fans.map { ($0.name, ReadingHistory.fanKey($0.id)) }
+        let series = model.monitor.fans.map { ($0.name, HistoryKey.fan($0.id)) }
         let points = ChartPoint.points(from: model.monitor.history, series: series) { $0 }
         return Chart(points) { point in
             LineMark(x: .value("Time", point.time), y: .value("RPM", point.value))
@@ -55,27 +57,12 @@ struct HistoryView: View {
     }
 
     private var timeAxis: some AxisContent {
-        let labelCutoff = historyDomain.upperBound.addingTimeInterval(-90)
+        let labelCutoff = historyDomain.upperBound.addingTimeInterval(-Self.axisLabelCutoff)
         return AxisMarks(values: .stride(by: .minute, count: 5)) { value in
             AxisGridLine()
             if let date = value.as(Date.self), date < labelCutoff {
                 AxisValueLabel(format: .dateTime.hour().minute())
             }
-        }
-    }
-}
-
-private struct ChartPoint: Identifiable {
-    let series: String
-    let time: Date
-    let value: Double
-
-    var id: String { "\(series)-\(time.timeIntervalSinceReferenceDate)" }
-
-    @MainActor
-    static func points(from history: ReadingHistory, series: [(name: String, key: String)], transform: (Double) -> Double) -> [ChartPoint] {
-        series.flatMap { name, key in
-            history.samples(key).map { ChartPoint(series: name, time: $0.id, value: transform($0.value)) }
         }
     }
 }

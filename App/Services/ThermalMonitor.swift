@@ -3,6 +3,11 @@ import MacFansCore
 import Observation
 import SMCKit
 
+enum MenuBarReadoutValue: Equatable {
+    case temperature(Double)
+    case rpm(Double)
+}
+
 @MainActor
 @Observable
 final class ThermalMonitor {
@@ -34,6 +39,12 @@ final class ThermalMonitor {
             .max { $0.1 < $1.1 }
     }
 
+    var sensorReadings: [SensorReading] {
+        readings.map { SensorReading(id: $0.key, celsius: $0.value) }
+    }
+
+    var fanLimits: [FanLimits] { fans.map(\.limits) }
+
     func summary(_ family: SensorFamily) -> SensorSummary? {
         summaries.first { $0.family == family }
     }
@@ -42,11 +53,15 @@ final class ThermalMonitor {
         RuleEngine.triggerValue(.group(group, aggregate), readings: sensorReadings, sensors: sensors)
     }
 
-    var sensorReadings: [SensorReading] {
-        readings.map { SensorReading(id: $0.key, celsius: $0.value) }
+    func readoutValue(for readout: MenuBarReadout) -> MenuBarReadoutValue? {
+        switch readout {
+        case .family(let family): summary(family).map { .temperature($0.max) }
+        case .hottest: hottest.map { .temperature($0.celsius) }
+        case .sensor(let id): readings[id].map { .temperature($0) }
+        case .fanRPM(let id): fans.first { $0.id == id }.map { .rpm($0.actualRPM) }
+        case .none: nil
+        }
     }
-
-    var fanLimits: [FanLimits] { fans.map(\.limits) }
 
     func applyOverrides(_ overrides: [SensorID: SensorOverride]) {
         self.overrides = overrides
@@ -85,7 +100,7 @@ final class ThermalMonitor {
         fans = snapshot.fans.map { reading in
             FanState(
                 id: FanID(rawValue: reading.index),
-                name: Self.fanName(index: reading.index, count: snapshot.fans.count),
+                name: FanState.defaultName(index: reading.index, count: snapshot.fans.count),
                 limits: FanLimits(id: FanID(rawValue: reading.index), minRPM: reading.minRPM, maxRPM: reading.maxRPM),
                 actualRPM: reading.actualRPM,
                 targetRPM: reading.targetRPM,
@@ -94,18 +109,10 @@ final class ThermalMonitor {
         }
         lastUpdate = date
 
-        var samples: [String: Double] = [:]
-        for (id, celsius) in plausible { samples[id.rawValue] = celsius }
-        for summary in summaries { samples[ReadingHistory.summaryKey(summary.family)] = summary.max }
-        for fan in fans { samples[ReadingHistory.fanKey(fan.id)] = fan.actualRPM }
+        var samples: [HistoryKey: Double] = [:]
+        for (id, celsius) in plausible { samples[.sensor(id)] = celsius }
+        for summary in summaries { samples[.summary(summary.family)] = summary.max }
+        for fan in fans { samples[.fan(fan.id)] = fan.actualRPM }
         history.append(samples, at: date)
-    }
-
-    private static func fanName(index: Int, count: Int) -> String {
-        switch (count, index) {
-        case (2, 0): "Left Fan"
-        case (2, 1): "Right Fan"
-        default: "Fan \(index + 1)"
-        }
     }
 }

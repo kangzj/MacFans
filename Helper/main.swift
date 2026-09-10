@@ -1,7 +1,7 @@
 import Foundation
 import os
 
-let log = Logger(subsystem: "com.jasperkang.macfans", category: "Helper")
+let log = Logger(subsystem: appBundleIdentifier, category: "Helper")
 
 let writer: FanWriter
 do {

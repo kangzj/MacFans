@@ -18,36 +18,3 @@ struct ControlModePicker: View {
         .help("Auto lets macOS drive the fans. Constant holds fixed speeds. Custom follows the active profile's rules.")
     }
 }
-
-struct ProfilePicker: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        Picker("Profile", selection: Binding(
-            get: { model.configuration.activeProfileID },
-            set: { model.activateProfile($0) }
-        )) {
-            ForEach(model.configuration.allProfiles) { profile in
-                Text(profile.name).tag(profile.id)
-            }
-        }
-    }
-}
-
-extension ControlMode {
-    var title: String {
-        switch self {
-        case .auto: "Auto"
-        case .constant: "Constant"
-        case .custom: "Custom"
-        }
-    }
-
-    var symbolName: String {
-        switch self {
-        case .auto: "wand.and.sparkles"
-        case .constant: "dial.medium"
-        case .custom: "slider.horizontal.3"
-        }
-    }
-}

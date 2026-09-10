@@ -33,7 +33,7 @@ struct SensorsView: View {
                     Text(summaryCaption(summary)).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Sparkline(samples: model.monitor.history.samples(ReadingHistory.summaryKey(summary.family)), tint: TemperatureTint.color(for: summary.max))
+                Sparkline(samples: model.monitor.history.samples(.summary(summary.family)), tint: ThermalLevel(celsius: summary.max).color)
                     .frame(width: 120, height: 28)
                 TemperatureText(celsius: summary.max, style: .title2)
                     .frame(width: 70, alignment: .trailing)
@@ -84,7 +84,7 @@ struct SensorsView: View {
     private func sensorRow(_ sensor: Sensor) -> some View {
         HStack(spacing: 12) {
             Button {
-                toggleFavorite(sensor)
+                model.configuration.toggleFavorite(sensor.id)
             } label: {
                 Image(systemName: sensor.isFavorite ? "star.fill" : "star")
                     .foregroundStyle(sensor.isFavorite ? .yellow : .secondary)
@@ -92,48 +92,17 @@ struct SensorsView: View {
             .buttonStyle(.plain)
             .help("Favourite sensors are offered as the menu bar readout.")
             VStack(alignment: .leading, spacing: 2) {
-                SensorNameField(name: sensor.name) { rename(sensor, to: $0) }
+                SensorNameField(name: sensor.name) { model.configuration.setSensorName($0, for: sensor.id) }
                 Text(sensor.id.rawValue)
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Sparkline(samples: model.monitor.history.samples(sensor.id.rawValue), tint: TemperatureTint.color(for: model.monitor.readings[sensor.id] ?? 0))
+            Sparkline(samples: model.monitor.history.samples(.sensor(sensor.id)), tint: ThermalLevel(celsius: model.monitor.readings[sensor.id] ?? 0).color)
                 .frame(width: 100, height: 24)
             TemperatureText(celsius: model.monitor.readings[sensor.id], style: .title3)
                 .frame(width: 60, alignment: .trailing)
         }
         .padding(.vertical, 2)
-    }
-
-    private func rename(_ sensor: Sensor, to newName: String) {
-        var override = model.configuration.sensorOverrides[sensor.id] ?? SensorOverride()
-        let trimmed = newName.trimmingCharacters(in: .whitespaces)
-        override.name = trimmed.isEmpty ? nil : trimmed
-        model.configuration.sensorOverrides[sensor.id] = override
-    }
-
-    private func toggleFavorite(_ sensor: Sensor) {
-        var override = model.configuration.sensorOverrides[sensor.id] ?? SensorOverride()
-        override.isFavorite.toggle()
-        model.configuration.sensorOverrides[sensor.id] = override
-    }
-}
-
-private struct SensorNameField: View {
-    let name: String
-    let commit: (String) -> Void
-    @State private var draft = ""
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        TextField("Name", text: $draft)
-            .textFieldStyle(.plain)
-            .font(.body.weight(.medium))
-            .focused($isFocused)
-            .onAppear { draft = name }
-            .onChange(of: name) { _, newName in if !isFocused { draft = newName } }
-            .onSubmit { commit(draft) }
-            .onChange(of: isFocused) { _, focused in if !focused { commit(draft) } }
     }
 }

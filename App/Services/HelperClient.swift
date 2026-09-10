@@ -5,7 +5,7 @@ import Synchronization
 
 @MainActor
 @Observable
-final class HelperClient {
+final class HelperClient: FanCommandSink {
     enum Status: Equatable {
         case notRegistered
         case requiresApproval
@@ -97,21 +97,26 @@ final class HelperClient {
         guard isEnabled else { throw ClientError.helperNotEnabled }
         let connection = activeConnection()
         let settled = Mutex(false)
+        let timeout = Mutex<Task<Void, Never>?>(nil)
         return try await withCheckedThrowingContinuation { continuation in
             @Sendable func settle(_ result: Result<Reply, any Error>) {
                 let first = settled.withLock { alreadySettled in
                     defer { alreadySettled = true }
                     return !alreadySettled
                 }
-                if first { continuation.resume(with: result) }
+                guard first else { return }
+                timeout.withLock { $0?.cancel() }
+                continuation.resume(with: result)
             }
             let proxy = connection.remoteObjectProxyWithErrorHandler { error in
                 settle(.failure(ClientError.transport(error.localizedDescription)))
             } as! MacFansHelperProtocol
             invoke(proxy) { reply in settle(.success(reply)) }
-            Task {
-                try? await Task.sleep(for: Self.callTimeout)
-                settle(.failure(ClientError.timedOut))
+            timeout.withLock {
+                $0 = Task {
+                    guard (try? await Task.sleep(for: Self.callTimeout)) != nil else { return }
+                    settle(.failure(ClientError.timedOut))
+                }
             }
         }
     }

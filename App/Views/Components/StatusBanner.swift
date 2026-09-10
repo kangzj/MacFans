@@ -8,19 +8,12 @@ struct StatusBanner: View {
             banner(symbol: "exclamationmark.triangle.fill", tint: .red, text: error) {
                 Button("Dismiss") { model.controller.clearError() }
             }
-        } else if !model.helper.isEnabled {
-            banner(symbol: "lock.shield", tint: .blue, text: helperText) {
+        } else if let callToAction = model.helper.status.callToAction {
+            banner(symbol: "lock.shield", tint: .blue, text: callToAction) {
                 Button(model.helper.status == .requiresApproval ? "Open Login Items" : "Install Helper") {
                     model.installHelper()
                 }
             }
-        }
-    }
-
-    private var helperText: String {
-        switch model.helper.status {
-        case .requiresApproval: "Approve MacFans Helper in System Settings › Login Items to enable fan control."
-        default: "Fan control needs a small privileged helper. Reading sensors works without it."
         }
     }
 

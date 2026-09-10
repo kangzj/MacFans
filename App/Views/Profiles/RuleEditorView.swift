@@ -4,11 +4,8 @@ import SwiftUI
 struct RuleEditorView: View {
     @Environment(AppModel.self) private var model
     @Binding var rule: Rule
-    let profile: Profile
+    let profileID: UUID
     let onDelete: () -> Void
-
-    private enum TriggerKind: String, CaseIterable { case group = "Group", sensor = "Sensor" }
-    private enum SpeedKind: String, CaseIterable { case percent = "Percent", rpm = "RPM", max = "Max" }
 
     var body: some View {
         Card {
@@ -17,7 +14,7 @@ struct RuleEditorView: View {
                 Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
                     GridRow {
                         rowLabel("When")
-                        triggerControls
+                        RuleTriggerPicker(trigger: $rule.trigger)
                     }
                     GridRow {
                         rowLabel("Threshold")
@@ -25,7 +22,7 @@ struct RuleEditorView: View {
                     }
                     GridRow {
                         rowLabel("Set")
-                        speedControls
+                        RuleSpeedPicker(speed: $rule.speed, fans: $rule.fans)
                     }
                 }
                 if !rule.isValid {
@@ -53,7 +50,7 @@ struct RuleEditorView: View {
                 .textFieldStyle(.plain)
                 .font(.headline)
             Spacer(minLength: 8)
-            statusPill
+            RuleStatusPill(rule: rule, profileID: profileID)
                 .fixedSize()
             Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
                 .buttonStyle(.borderless)
@@ -61,174 +58,13 @@ struct RuleEditorView: View {
         }
     }
 
-    private var statusPill: some View {
-        let value = RuleEngine.triggerValue(rule.trigger, readings: model.monitor.sensorReadings, sensors: model.monitor.sensors)
-        let isLive = model.controller.mode == .custom && model.configuration.activeProfileID == profile.id
-        let isActive = isLive
-            ? model.controller.lastEvaluation?.state.activeRuleIDs.contains(rule.id) ?? false
-            : (value.map { $0 >= rule.onAbove } ?? false) && rule.isEnabled && rule.isValid
-        let unit = model.configuration.temperatureUnit
-        return HStack(spacing: 6) {
-            if let value {
-                Text(Formatters.temperature(value, unit: unit))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-            }
-            Text(isActive ? (isLive ? "Active" : "Would be active") : (isLive ? "Idle" : "Would be idle"))
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(isActive ? Color.green.opacity(0.18) : Color.secondary.opacity(0.12), in: Capsule())
-                .foregroundStyle(isActive ? .green : .secondary)
-        }
-        .font(.caption)
-    }
-
-    private var triggerControls: some View {
-        HStack(spacing: 8) {
-            Picker("", selection: triggerKind) {
-                ForEach(TriggerKind.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .fixedSize()
-            switch rule.trigger {
-            case .group(let group, let aggregate):
-                Picker("", selection: Binding(get: { group }, set: { rule.trigger = .group($0, aggregate) })) {
-                    ForEach(SensorGroup.allCases, id: \.self) { Text($0.title).tag($0) }
-                }
-                .labelsHidden()
-                .frame(width: 120)
-                Picker("", selection: Binding(get: { aggregate }, set: { rule.trigger = .group(group, $0) })) {
-                    Text("hottest sensor").tag(Aggregate.max)
-                    Text("average").tag(Aggregate.average)
-                }
-                .labelsHidden()
-                .frame(width: 150)
-            case .sensor(let id):
-                Picker("", selection: Binding(get: { id }, set: { rule.trigger = .sensor($0) })) {
-                    ForEach(sensorChoices) { sensor in
-                        Text(sensor.isFavorite ? "★ \(sensor.name)" : sensor.name).tag(sensor.id)
-                    }
-                }
-                .labelsHidden()
-                .frame(width: 278)
-            }
-        }
-    }
-
     private var thresholdControls: some View {
-        HStack(spacing: 8) {
-            Text("is above")
-            temperatureField($rule.onAbove)
-            Text("until below")
-            temperatureField($rule.offBelow)
-        }
-        .fixedSize()
-    }
-
-    private var speedControls: some View {
-        HStack(spacing: 8) {
-            Picker("", selection: fanChoice) {
-                Text("All fans").tag(FanSelection.all)
-                ForEach(model.monitor.fans) { fan in
-                    Text(fan.name).tag(FanSelection.some([fan.id]))
-                }
-            }
-            .labelsHidden()
-            .frame(width: 120)
-            Text("to")
-            Picker("", selection: speedKind) {
-                ForEach(SpeedKind.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .fixedSize()
-            switch rule.speed {
-            case .percent(let value):
-                numberField(value, range: 0...100, step: 5, suffix: "%") { rule.speed = .percent($0) }
-            case .rpm(let value):
-                numberField(value, range: 0...10_000, step: 100, suffix: "RPM") { rule.speed = .rpm($0) }
-            case .max:
-                EmptyView()
-            }
-        }
-    }
-
-    private var sensorChoices: [Sensor] {
-        model.monitor.sensorsWithReadings.sorted { ($0.isFavorite ? 0 : 1, $0.name) < ($1.isFavorite ? 0 : 1, $1.name) }
-    }
-
-    private var triggerKind: Binding<TriggerKind> {
-        Binding(
-            get: { if case .sensor = rule.trigger { .sensor } else { .group } },
-            set: { kind in
-                switch kind {
-                case .group: rule.trigger = .group(.cpu, .max)
-                case .sensor: rule.trigger = .sensor(sensorChoices.first?.id ?? SensorID(rawValue: "Tp00"))
-                }
-            }
-        )
-    }
-
-    private var fanChoice: Binding<FanSelection> {
-        Binding(
-            get: {
-                if case .some(let ids) = rule.fans, ids.count == 1, model.monitor.fans.contains(where: { ids.contains($0.id) }) { return rule.fans }
-                return .all
-            },
-            set: { rule.fans = $0 }
-        )
-    }
-
-    private var speedKind: Binding<SpeedKind> {
-        Binding(
-            get: {
-                switch rule.speed {
-                case .percent: .percent
-                case .rpm: .rpm
-                case .max: .max
-                }
-            },
-            set: { kind in
-                switch kind {
-                case .percent: rule.speed = .percent(60)
-                case .rpm: rule.speed = .rpm(model.monitor.fans.first.map { ($0.limits.minRPM + $0.limits.maxRPM) / 2 } ?? 3000)
-                case .max: rule.speed = .max
-                }
-            }
-        )
-    }
-
-    private func temperatureField(_ celsius: Binding<Double>) -> some View {
         let unit = model.configuration.temperatureUnit
-        let display = Binding(
-            get: { Formatters.converted(celsius.wrappedValue, to: unit).rounded() },
-            set: { celsius.wrappedValue = Formatters.celsius($0, from: unit) }
-        )
-        return HStack(spacing: 2) {
-            TextField("", value: display, format: .number.precision(.fractionLength(0)))
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 56)
-                .multilineTextAlignment(.trailing)
-            Stepper("", value: display, in: Formatters.converted(-40, to: unit)...Formatters.converted(150, to: unit), step: 1)
-                .labelsHidden()
-            Text(unit == .celsius ? "°C" : "°F")
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func numberField(_ value: Double, range: ClosedRange<Double>, step: Double, suffix: String, set: @escaping (Double) -> Void) -> some View {
-        let binding = Binding(get: { value }, set: { set(min(max($0, range.lowerBound), range.upperBound)) })
-        return HStack(spacing: 2) {
-            TextField("", value: binding, format: .number.precision(.fractionLength(0)))
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 64)
-                .multilineTextAlignment(.trailing)
-            Stepper("", value: binding, in: range, step: step)
-                .labelsHidden()
-            Text(suffix)
-                .foregroundStyle(.secondary)
+        return HStack(spacing: 8) {
+            Text("is above")
+            TemperatureField(celsius: $rule.onAbove, unit: unit)
+            Text("until below")
+            TemperatureField(celsius: $rule.offBelow, unit: unit)
         }
         .fixedSize()
     }

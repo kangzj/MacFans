@@ -4,7 +4,6 @@ import SwiftUI
 struct ProfilesView: View {
     @Environment(AppModel.self) private var model
     @State private var selectedProfileID: UUID?
-    @State private var showDuplicatePrompt = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -57,7 +56,7 @@ struct ProfilesView: View {
     @ViewBuilder
     private var editor: some View {
         if let profile = selectedProfile {
-            ProfileEditor(profile: profile, onDuplicate: duplicateSelected)
+            ProfileEditor(profile: profile)
                 .id(profile.id)
         } else {
             ContentUnavailableView("Select a Profile", systemImage: "slider.horizontal.3", description: Text("Profiles hold the rules Custom mode follows."))
@@ -69,118 +68,21 @@ struct ProfilesView: View {
     }
 
     private var canDeleteSelected: Bool {
-        guard let profile = selectedProfile else { return false }
-        return !profile.isBuiltIn && profile.id != model.configuration.activeProfileID
+        selectedProfileID.map { model.configuration.canDeleteProfile(id: $0) } ?? false
     }
 
     private func addProfile() {
-        let profile = Profile(id: UUID(), name: uniqueName("New Profile"), rules: [], isBuiltIn: false)
-        model.configuration.profiles.append(profile)
-        selectedProfileID = profile.id
+        selectedProfileID = model.configuration.addProfile().id
     }
 
     private func duplicateSelected() {
-        guard let source = selectedProfile else { return }
-        let copy = Profile(
-            id: UUID(),
-            name: uniqueName("\(source.name) Copy"),
-            rules: source.rules.map { rule in
-                var rule = rule
-                rule.id = UUID()
-                return rule
-            },
-            isBuiltIn: false
-        )
-        model.configuration.profiles.append(copy)
+        guard let id = selectedProfileID, let copy = model.configuration.duplicateProfile(id: id) else { return }
         selectedProfileID = copy.id
     }
 
     private func deleteSelected() {
         guard canDeleteSelected, let id = selectedProfileID else { return }
-        model.configuration.profiles.removeAll { $0.id == id }
+        model.configuration.deleteProfile(id: id)
         selectedProfileID = model.configuration.activeProfileID
-    }
-
-    private func uniqueName(_ base: String) -> String {
-        let names = Set(model.configuration.allProfiles.map(\.name))
-        guard names.contains(base) else { return base }
-        return (2...).lazy.map { "\(base) \($0)" }.first { !names.contains($0) } ?? base
-    }
-}
-
-private struct ProfileEditor: View {
-    @Environment(AppModel.self) private var model
-    let profile: Profile
-    let onDuplicate: () -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                header
-                if profile.rules.isEmpty {
-                    ContentUnavailableView("No Rules", systemImage: "list.bullet.rectangle", description: Text("Add a rule to spin fans up when a sensor gets hot."))
-                        .frame(height: 200)
-                } else {
-                    ForEach(profile.rules) { rule in
-                        RuleEditorView(rule: ruleBinding(rule), profile: profile, onDelete: { removeRule(rule) })
-                    }
-                }
-                Button { addRule() } label: { Label("Add Rule", systemImage: "plus") }
-            }
-            .padding(20)
-        }
-    }
-
-    private var header: some View {
-        HStack(spacing: 12) {
-            TextField("Profile name", text: nameBinding)
-                .textFieldStyle(.roundedBorder)
-                .font(.title3)
-                .frame(maxWidth: 320)
-            Spacer()
-            if model.configuration.isModifiedBuiltIn(id: profile.id) {
-                Button("Reset to Default") { model.configuration.resetBuiltInProfile(id: profile.id) }
-                    .help("Discard your changes and restore the built-in rules.")
-            }
-            if profile.id == model.configuration.activeProfileID {
-                Label("Active", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-            } else {
-                Button("Activate") {
-                    model.activateProfile(profile.id)
-                    if model.controller.mode != .custom { model.setMode(.custom) }
-                }
-                .disabled(!profile.rules.allSatisfy(\.isValid))
-                .help("Activates this profile and switches to Custom mode.")
-            }
-        }
-    }
-
-    private var nameBinding: Binding<String> {
-        Binding(get: { profile.name }, set: { name in update { $0.name = name } })
-    }
-
-    private func ruleBinding(_ rule: Rule) -> Binding<Rule> {
-        Binding(
-            get: { model.configuration.profile(id: profile.id)?.rules.first { $0.id == rule.id } ?? rule },
-            set: { newRule in
-                update { profile in
-                    if let index = profile.rules.firstIndex(where: { $0.id == rule.id }) { profile.rules[index] = newRule }
-                }
-            }
-        )
-    }
-
-    private func addRule() {
-        let rule = Rule(name: "Rule \(profile.rules.count + 1)", trigger: .group(.cpu, .max), onAbove: 80, speed: .percent(60))
-        update { $0.rules.append(rule) }
-    }
-
-    private func removeRule(_ rule: Rule) {
-        update { $0.rules.removeAll { $0.id == rule.id } }
-    }
-
-    private func update(_ change: (inout Profile) -> Void) {
-        model.configuration.updateProfile(id: profile.id, change)
     }
 }

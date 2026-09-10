@@ -23,6 +23,29 @@ public enum SensorFamily: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    public static let headlineFamilies: [SensorFamily] = [.cpuPerformance, .gpu, .ssd, .battery]
+
+    public var shortTitle: String {
+        switch self {
+        case .cpuPerformance: "CPU"
+        case .cpuEfficiency: "E-cores"
+        default: title
+        }
+    }
+
+    public var symbolName: String {
+        switch self {
+        case .cpuPerformance, .cpuEfficiency: "cpu"
+        case .gpu: "rectangle.3.group"
+        case .soc: "memorychip"
+        case .memory: "memorychip.fill"
+        case .ssd: "internaldrive"
+        case .battery: "battery.100percent"
+        case .wifi: "wifi"
+        case .ambient: "wind"
+        }
+    }
+
     public var group: SensorGroup {
         switch self {
         case .cpuPerformance, .cpuEfficiency: .cpu

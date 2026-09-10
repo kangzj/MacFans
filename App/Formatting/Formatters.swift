@@ -10,11 +10,7 @@ enum Formatters {
     }()
 
     static func temperature(_ celsius: Double, unit: TemperatureUnit) -> String {
-        "\(Int(converted(celsius, to: unit).rounded()))°"
-    }
-
-    static func temperatureWithUnit(_ celsius: Double, unit: TemperatureUnit) -> String {
-        temperature(celsius, unit: unit) + (unit == .celsius ? "C" : "F")
+        "\(Int(unit.convert(celsius: celsius).rounded()))°"
     }
 
     static func rpm(_ value: Double) -> String {
@@ -32,19 +28,5 @@ enum Formatters {
     static func minutes(_ seconds: TimeInterval) -> String {
         let minutes = Int((seconds / 60).rounded())
         return minutes == 1 ? "1 min" : "\(minutes) min"
-    }
-
-    static func converted(_ celsius: Double, to unit: TemperatureUnit) -> Double {
-        switch unit {
-        case .celsius: celsius
-        case .fahrenheit: celsius * 9 / 5 + 32
-        }
-    }
-
-    static func celsius(_ value: Double, from unit: TemperatureUnit) -> Double {
-        switch unit {
-        case .celsius: value
-        case .fahrenheit: (value - 32) * 5 / 9
-        }
     }
 }

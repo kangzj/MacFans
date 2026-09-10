@@ -9,6 +9,8 @@ public struct FanLimits: Codable, Hashable, Sendable {
         self.maxRPM = maxRPM
     }
 
+    var span: Double { max(maxRPM - minRPM, 1) }
+
     func clamped(_ rpm: Double) -> Double {
         min(max(rpm, minRPM), maxRPM)
     }

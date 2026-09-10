@@ -5,7 +5,7 @@ import os
 final class FanWriter: Sendable {
     private let smc: SMCConnection
     private let limits: [Int: (min: Double, max: Double)]
-    private let log = Logger(subsystem: "com.jasperkang.macfans", category: "FanWriter")
+    private let log = Logger(subsystem: appBundleIdentifier, category: "FanWriter")
 
     init() throws {
         smc = try SMCConnection()

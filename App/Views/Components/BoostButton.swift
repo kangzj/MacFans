@@ -12,13 +12,6 @@ struct BoostButton: View {
         .labelStyle(.iconOnly)
         .tint(model.controller.isBoosting ? .orange : nil)
         .disabled(!model.helper.isEnabled)
-        .help(helpText)
-    }
-
-    private var helpText: String {
-        if model.controller.isBoosting, let until = model.controller.boostUntil {
-            return "Stop full blast (ends at \(until.formatted(date: .omitted, time: .shortened)))"
-        }
-        return "Full blast for \(Formatters.minutes(model.configuration.boostDuration)), then back to \(model.controller.mode.title)"
+        .help(model.controlStatus.boostButtonHelp(duration: model.configuration.boostDuration))
     }
 }

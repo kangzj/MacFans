@@ -6,6 +6,8 @@ import Observation
 @MainActor
 @Observable
 final class AppModel {
+    private static let saveDebounce: Duration = .milliseconds(500)
+
     var configuration: AppConfiguration {
         didSet {
             guard configuration != oldValue else { return }
@@ -30,7 +32,7 @@ final class AppModel {
     init(store: ConfigurationStore = ConfigurationStore(directory: ConfigurationStore.defaultDirectory)) {
         self.store = store
         configuration = store.load()
-        controller = FanController(helper: helper)
+        controller = FanController(sink: helper)
         monitor.applyOverrides(configuration.sensorOverrides)
         if configuration.startInModeOnLaunch {
             controller.setMode(configuration.mode)
@@ -46,22 +48,44 @@ final class AppModel {
         configuration.profile(id: configuration.activeProfileID) ?? .balanced
     }
 
+    var controlStatus: ControlStatus {
+        if controller.isBoosting, let endsAt = controller.boostEndsAt {
+            return .boosting(endsAt: endsAt, returningTo: controller.mode, profileName: activeProfile.name)
+        }
+        switch controller.mode {
+        case .auto:
+            return .auto
+        case .constant:
+            return .constant
+        case .custom:
+            let evaluation = controller.lastEvaluation
+            let activeIDs = evaluation?.state.activeRuleIDs ?? []
+            let activeRules = activeProfile.rules.filter { activeIDs.contains($0.id) }.map(\.name)
+            let easing = activeRules.isEmpty && (evaluation?.commands.values.contains { $0 != .auto } ?? false)
+            return .custom(profileName: activeProfile.name, activeRules: activeRules, isEasingBackToAuto: easing)
+        }
+    }
+
     // `configuration.mode` remembers the user's choice for "resume on launch"; the controller may fall back
     // to Auto on its own (errors, sleep) without changing that choice.
     func setMode(_ mode: ControlMode) {
         configuration.mode = mode
         controller.setMode(mode)
-        Task { await tick() }
+        requestTick()
     }
 
     func activateProfile(_ id: UUID) {
         configuration.activeProfileID = id
         controller.resetEngine()
-        Task { await tick() }
+        requestTick()
     }
 
-    func setConstantSpeed(_ speed: FanSpeed, for fan: FanID) {
-        configuration.constantSpeeds[fan] = speed
+    func constantPercent(for fan: FanState) -> Double {
+        (configuration.constantSpeeds[fan.id] ?? AppConfiguration.defaultConstantSpeed).percent(for: fan.limits)
+    }
+
+    func setConstantPercent(_ percent: Double, for fans: [FanID]) {
+        for fan in fans { configuration.constantSpeeds[fan] = .percent(percent) }
     }
 
     func toggleBoost() {
@@ -70,19 +94,19 @@ final class AppModel {
         } else {
             controller.boost(for: configuration.boostDuration)
         }
-        Task { await tick() }
+        requestTick()
     }
 
     func installHelper() {
-        do {
-            if helper.isEnabled {
-                Task { await reinstallHelper() }
-            } else {
+        Task {
+            if helper.isEnabled { await removeHelper() }
+            guard helperInstallError == nil else { return }
+            do {
                 try helper.register()
                 helperInstallError = nil
+            } catch {
+                helperInstallError = error.localizedDescription
             }
-        } catch {
-            helperInstallError = error.localizedDescription
         }
     }
 
@@ -103,14 +127,8 @@ final class AppModel {
         await controller.restoreAuto()
     }
 
-    private func reinstallHelper() async {
-        await removeHelper()
-        guard helperInstallError == nil else { return }
-        do {
-            try helper.register()
-        } catch {
-            helperInstallError = error.localizedDescription
-        }
+    private func requestTick() {
+        Task { await tick() }
     }
 
     private func startPolling() {
@@ -144,7 +162,7 @@ final class AppModel {
     private func scheduleSave() {
         saveTask?.cancel()
         saveTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(for: Self.saveDebounce)
             guard let self, !Task.isCancelled else { return }
             try? store.save(configuration)
         }

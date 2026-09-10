@@ -2,9 +2,8 @@ import MacFansCore
 import SwiftUI
 
 struct TemperatureRing: View {
-    @Environment(AppModel.self) private var model
     let celsius: Double?
-    var diameter: CGFloat = 160
+    let diameter: CGFloat
 
     private static let scale: ClosedRange<Double> = 0...110
     private static let sweep = 0.75
@@ -38,21 +37,11 @@ struct TemperatureRing: View {
         .overlay {
             VStack(spacing: 2) {
                 TemperatureText(celsius: celsius, style: .largeTitle)
-                    .font(.system(size: diameter * 0.28, weight: .semibold, design: .rounded))
-                Text(celsius.map(Self.status) ?? "—")
+                Text(celsius.map { ThermalLevel(celsius: $0).label } ?? "—")
                     .font(.system(size: diameter * 0.085, weight: .medium))
                     .foregroundStyle(.secondary)
             }
             .offset(y: diameter * 0.03)
-        }
-    }
-
-    static func status(for celsius: Double) -> String {
-        switch celsius {
-        case ..<60: "Running cool"
-        case ..<80: "Getting warm"
-        case ..<95: "Running hot"
-        default: "Very hot"
         }
     }
 }

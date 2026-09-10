@@ -1,4 +1,3 @@
-import MacFansCore
 import SwiftUI
 
 struct MenuBarLabel: View {
@@ -15,18 +14,10 @@ struct MenuBarLabel: View {
     }
 
     private var readout: String? {
-        let unit = model.configuration.temperatureUnit
-        switch model.configuration.menuBarReadout {
-        case .family(let family):
-            return model.monitor.summary(family).map { Formatters.temperature($0.max, unit: unit) }
-        case .hottest:
-            return model.monitor.hottest.map { Formatters.temperature($0.celsius, unit: unit) }
-        case .sensor(let id):
-            return model.monitor.readings[id].map { Formatters.temperature($0, unit: unit) }
-        case .fanRPM(let id):
-            return model.monitor.fans.first { $0.id == id }.map { Formatters.rpm($0.actualRPM) }
-        case .none:
-            return nil
+        switch model.monitor.readoutValue(for: model.configuration.menuBarReadout) {
+        case .temperature(let celsius): Formatters.temperature(celsius, unit: model.configuration.temperatureUnit)
+        case .rpm(let rpm): Formatters.rpm(rpm)
+        case nil: nil
         }
     }
 }
