@@ -88,20 +88,12 @@ struct FansView: View {
         Binding(
             get: {
                 let speed = model.configuration.constantSpeeds[fan.id] ?? AppConfiguration.defaultConstantSpeed
-                return Self.percent(of: speed, limits: fan.limits)
+                return speed.percent(for: fan.limits)
             },
             set: { value in
                 let targets = linkFanSpeeds ? model.monitor.fans.map(\.id) : [fan.id]
                 for id in targets { model.setConstantSpeed(.percent(value), for: id) }
             }
         )
-    }
-
-    private static func percent(of speed: FanSpeed, limits: FanLimits) -> Double {
-        switch speed {
-        case .percent(let value): min(max(value, 0), 100)
-        case .max: 100
-        case .rpm: (speed.rpm(for: limits) - limits.minRPM) / max(limits.maxRPM - limits.minRPM, 1) * 100
-        }
     }
 }

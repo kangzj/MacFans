@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case overview, fans, sensors, profiles
+    case overview, fans, sensors, profiles, history
 
     var id: SidebarItem { self }
 
@@ -11,6 +11,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .fans: "Fans"
         case .sensors: "Sensors"
         case .profiles: "Profiles"
+        case .history: "History"
         }
     }
 
@@ -20,6 +21,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .fans: "fanblades"
         case .sensors: "thermometer.medium"
         case .profiles: "slider.horizontal.3"
+        case .history: "clock.arrow.circlepath"
         }
     }
 }
@@ -94,6 +96,7 @@ struct MainWindow: View {
         case .fans: FansView()
         case .sensors: SensorsView()
         case .profiles: ProfilesView()
+        case .history: HistoryView()
         }
     }
 }

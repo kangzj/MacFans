@@ -14,14 +14,6 @@ struct StatusBanner: View {
                     model.installHelper()
                 }
             }
-        } else if model.controller.isBoosting {
-            banner(symbol: "wind", tint: .orange, text: "Full blast is on. Fans return to \(model.controller.mode.title) at \(boostEnd).") {
-                Button("Stop") { model.toggleBoost() }
-            }
-        } else if model.controller.isManual {
-            banner(symbol: "hand.raised.fill", tint: .orange, text: "Fans are under manual control. Auto is restored when MacFans quits or the Mac sleeps.") {
-                Button("Back to Auto") { model.setMode(.auto) }
-            }
         }
     }
 
@@ -30,10 +22,6 @@ struct StatusBanner: View {
         case .requiresApproval: "Approve MacFans Helper in System Settings › Login Items to enable fan control."
         default: "Fan control needs a small privileged helper. Reading sensors works without it."
         }
-    }
-
-    private var boostEnd: String {
-        model.controller.boostUntil?.formatted(date: .omitted, time: .shortened) ?? ""
     }
 
     private func banner<Action: View>(symbol: String, tint: Color, text: String, @ViewBuilder action: () -> Action) -> some View {

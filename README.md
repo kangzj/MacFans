@@ -27,6 +27,10 @@ A native macOS app that shows what is running hot and lets you decide how hard t
 |---|---|
 | ![Fans](docs/screenshots/fans.png) | ![Profiles](docs/screenshots/profiles.png) |
 
+| History |
+|---|
+| ![History](docs/screenshots/history.png) |
+
 ## Safety
 
 Fan writes never happen in the app.
