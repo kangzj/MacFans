@@ -1,0 +1,116 @@
+import MacFansCore
+import SwiftUI
+
+struct MenuBarPanel: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
+
+    private let readouts = [("cpu-performance", "CPU"), ("gpu", "GPU"), ("ssd", "SSD"), ("battery", "Battery")]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            header
+            temperatureGrid
+            fans
+            controls
+            Divider()
+            footer
+        }
+        .padding(16)
+        .frame(width: 320)
+    }
+
+    private var header: some View {
+        HStack {
+            Text("MacFans")
+                .font(.title3.weight(.semibold))
+            Spacer()
+            Label(modeSummary, systemImage: model.controller.mode.symbolName)
+                .font(.caption.weight(.medium))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(.quaternary, in: Capsule())
+        }
+    }
+
+    private var modeSummary: String {
+        switch model.controller.mode {
+        case .custom: "Custom · \(model.activeProfile.name)"
+        default: model.controller.mode.title
+        }
+    }
+
+    private var temperatureGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+            ForEach(readouts, id: \.0) { id, title in
+                HStack {
+                    Text(title)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    TemperatureText(celsius: model.monitor.summary(id)?.max, style: .title3)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+        }
+    }
+
+    private var fans: some View {
+        VStack(spacing: 6) {
+            ForEach(model.monitor.fans) { fan in
+                HStack {
+                    Image(systemName: "fanblades")
+                        .foregroundStyle(.secondary)
+                    Text(fan.name)
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(Formatters.rpm(fan.actualRPM))
+                            .font(.body.weight(.medium))
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                        Text(fan.isForced ? "Target \(Formatters.rpm(fan.targetRPM))" : "System controlled")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private var controls: some View {
+        VStack(spacing: 10) {
+            ControlModePicker()
+            if model.controller.mode == .custom {
+                ProfilePicker()
+                    .labelsHidden()
+            }
+            Button {
+                model.toggleBoost()
+            } label: {
+                Label(model.controller.isBoosting ? "Stop Full Blast" : "Full Blast for 5 Minutes", systemImage: "wind")
+                    .frame(maxWidth: .infinity)
+            }
+            .disabled(!model.helper.isEnabled)
+            .help(model.helper.isEnabled ? "Run every fan at maximum speed for five minutes." : "Install the helper in Settings to control fans.")
+        }
+    }
+
+    private var footer: some View {
+        HStack {
+            Button("Open MacFans") {
+                openWindow(id: MainWindow.id)
+                NSApp.activate()
+            }
+            Spacer()
+            Button("Settings…") {
+                openSettings()
+                NSApp.activate()
+            }
+            Button("Quit") { NSApp.terminate(nil) }
+        }
+        .buttonStyle(.link)
+        .font(.callout)
+    }
+}
