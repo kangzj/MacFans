@@ -25,8 +25,20 @@
 ## Why MacFans
 
 Apple's fan curve is tuned for silence, not for sustained load.
-When you render, compile, train, or game, the chip heats up before the fans catch up.
-MacFans gives you the dial back: keep the machine cooler under load, keep it quieter when it does not matter, and always know what is going on inside.
+macOS lets the chip climb toward 100 °C before the fans spin up in earnest, then relies on thermal throttling to hold the line.
+That is a fine trade for a quiet desk while you write email; it is a poor one for the work Macs increasingly do all day.
+
+**Running local LLMs is the new normal, and it is exactly the workload Apple's curve was not tuned for.**
+Ollama, LM Studio, MLX, llama.cpp, Stable Diffusion: a 30-billion-parameter model on an M-series chip keeps the GPU and memory fabric pinned for minutes or hours, not seconds.
+Under that kind of load the SoC sits at its thermal limit, the fans stay conservative, and the chip throttles to protect itself, so your tokens-per-second drop right when you need them.
+Sustained heat is also the thing that ages silicon, batteries, and solder joints fastest.
+
+MacFans gives you the dial back:
+
+- **Run cooler under load.** A Custom profile such as *GPU above 80 °C → fans at 70 % until below 70 °C* keeps inference and training at full speed instead of throttled.
+- **Stay quiet when it does not matter.** Auto mode hands control back to macOS the moment you switch, quit, or the Mac sleeps.
+- **See what is actually happening.** Real sensor temperatures, real RPM, a 30-minute trend, and a menu bar readout you can leave on all day.
+- **Pre-cool before a long job.** One click of Full Blast brings the fans up ahead of a render or a fine-tuning run.
 
 - **Made for Apple Silicon.** Reads temperatures straight from the System Management Controller and understands the sensor layout of M1 through M5, including M5 quirks.
 - **Native, not ported.** SwiftUI, menu bar extra, Swift Charts, dark and light mode, keyboard shortcuts. It feels like part of macOS.
@@ -163,6 +175,11 @@ The design spec and implementation plan live in `docs/superpowers`.
 
 ## FAQ
 
+**I run local models all day. Will this help?**
+Yes, that is the headline use case.
+Watch the GPU reading while a model is loaded: if it sits in the 90s, macOS is throttling.
+Activate the built-in Cool profile, or write a rule that kicks the fans in at 75 °C, and the chip holds its clocks instead of shedding them.
+
 **Will this damage my Mac?**
 MacFans only uses the same fan target mechanism macOS uses, never exceeds the hardware limits the SMC reports, and defaults to Apple's control at every opportunity.
 Running fans faster wears them slightly sooner; running them slower than Apple would is where you should be thoughtful, which is why Custom rules always fall back to Auto when no rule is active.
@@ -187,4 +204,4 @@ MIT. See [LICENSE](LICENSE).
 
 ---
 
-<sub>Keywords: macOS fan control, Apple Silicon fan control, MacBook Pro fan speed, M1 M2 M3 M4 M5 fan control, Mac temperature monitor, SMC fan control, CPU GPU temperature menu bar, macOS thermal monitor, fan curve, SwiftUI, open source alternative to Macs Fan Control, TG Pro, smcFanControl, iStat Menus.</sub>
+<sub>Keywords: macOS fan control, Apple Silicon fan control, MacBook Pro fan speed, M1 M2 M3 M4 M5 fan control, Mac temperature monitor, SMC fan control, CPU GPU temperature menu bar, macOS thermal monitor, fan curve, Mac running hot, Mac thermal throttling, local LLM Mac cooling, Ollama Mac fan speed, LM Studio Mac temperature, MLX Apple Silicon heat, keep MacBook cool, SwiftUI, open source alternative to Macs Fan Control, TG Pro, smcFanControl, iStat Menus.</sub>
