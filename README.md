@@ -2,7 +2,7 @@
 
 A native macOS app that shows what is running hot and lets you decide how hard the fans work.
 
-![MacFans icon](App/Assets.xcassets/AppIcon.appiconset/icon_128x128.png)
+![Overview](docs/screenshots/overview.png)
 
 ## What it does
 
@@ -16,6 +16,16 @@ A native macOS app that shows what is running hot and lets you decide how hard t
     Quiet, Balanced, and Cool profiles are built in and can be duplicated and tuned.
 - Lives in the menu bar with a live readout and a one-click "full blast for five minutes".
 - Keeps a 30 minute history of temperatures and RPM.
+
+## Screenshots
+
+| Menu bar | Sensors |
+|---|---|
+| ![Menu bar](docs/screenshots/menu-bar.png) | ![Sensors](docs/screenshots/sensors.png) |
+
+| Fans | Profiles |
+|---|---|
+| ![Fans](docs/screenshots/fans.png) | ![Profiles](docs/screenshots/profiles.png) |
 
 ## Safety
 
