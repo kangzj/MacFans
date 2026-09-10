@@ -5,8 +5,10 @@ struct MainWindowSizing: ViewModifier {
     private static let trendHeight: CGFloat = 42
     private static let overviewCollapsedHeight: CGFloat = 332
     private static let defaultMinimumHeight: CGFloat = 320
+    private static let bannerHeight: CGFloat = 72
 
     let selection: SidebarItem
+    let bannerVisible: Bool
     @AppStorage(OverviewView.trendsExpandedKey) private var trendsExpanded = false
     @State private var window: NSWindow?
 
@@ -21,7 +23,7 @@ struct MainWindowSizing: ViewModifier {
 
     private var minimumHeight: CGFloat {
         guard selection == .overview else { return Self.defaultMinimumHeight }
-        return Self.overviewCollapsedHeight + (trendsExpanded ? Self.trendHeight : 0)
+        return Self.overviewCollapsedHeight + (trendsExpanded ? Self.trendHeight : 0) + (bannerVisible ? Self.bannerHeight : 0)
     }
 
     // SwiftUI grows the window when the minimum height rises but never shrinks it back, so collapsing is explicit.

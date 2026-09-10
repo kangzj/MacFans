@@ -21,15 +21,20 @@ while [[ $# -gt 0 ]]; do
 done
 
 team=""
+# launchd refuses an ad-hoc signed daemon that has the hardened runtime flag (Launch Constraint Violation),
+# so ad-hoc builds ship without it. A real identity keeps hardened runtime, which notarization requires.
+hardened_runtime="NO"
 if [[ "$identity" != "-" ]]; then
   team=$(echo "$identity" | sed -n 's/.*(\([A-Z0-9]*\)).*/\1/p')
   [[ -n "$team" ]] || { echo "Could not read the Team ID from the identity string" >&2; exit 1; }
+  hardened_runtime="YES"
 fi
 
 xcodegen generate --quiet
 rm -rf build/Release dist
 xcodebuild -project Fanwright.xcodeproj -scheme Fanwright -configuration Release -derivedDataPath build/Release \
-  CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" OTHER_CODE_SIGN_FLAGS="--timestamp" build 2>&1 \
+  CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" OTHER_CODE_SIGN_FLAGS="--timestamp" \
+  ENABLE_HARDENED_RUNTIME="$hardened_runtime" build 2>&1 \
   | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
 
 app="build/Release/Build/Products/Release/Fanwright.app"

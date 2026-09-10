@@ -101,13 +101,23 @@ final class AppModel {
         Task {
             if helper.isEnabled { await removeHelper() }
             guard helperInstallError == nil else { return }
+            let error = await registerHelperWithRetry()
+            helperInstallError = helper.status == .notRegistered ? error : nil
+        }
+    }
+
+    // Service Management rejects a registration that lands while the previous one is still being torn down.
+    private func registerHelperWithRetry(attempts: Int = 4) async -> String? {
+        for attempt in 1...attempts {
             do {
                 try helper.register()
-                helperInstallError = nil
+                return nil
             } catch {
-                helperInstallError = error.localizedDescription
+                if attempt == attempts { return error.localizedDescription }
+                try? await Task.sleep(for: .seconds(1))
             }
         }
+        return nil
     }
 
     func removeHelper() async {

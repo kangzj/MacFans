@@ -16,12 +16,12 @@ struct MainWindow: View {
         } detail: {
             VStack(spacing: 0) {
                 StatusBanner()
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
                 detail
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color(nsColor: .windowBackgroundColor).ignoresSafeArea())
             .navigationTitle(selection.title)
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
@@ -34,9 +34,13 @@ struct MainWindow: View {
                 }
             }
         }
-        .modifier(MainWindowSizing(selection: selection))
+        .modifier(MainWindowSizing(selection: selection, bannerVisible: isBannerVisible))
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.sidebarSelection, $selection)
+    }
+
+    private var isBannerVisible: Bool {
+        model.controller.lastError != nil || !model.helper.isEnabled
     }
 
     @ViewBuilder

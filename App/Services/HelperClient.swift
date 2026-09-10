@@ -96,28 +96,13 @@ final class HelperClient: FanCommandSink {
     ) async throws -> Reply {
         guard isEnabled else { throw ClientError.helperNotEnabled }
         let connection = activeConnection()
-        let settled = Mutex(false)
-        let timeout = Mutex<Task<Void, Never>?>(nil)
         return try await withCheckedThrowingContinuation { continuation in
-            @Sendable func settle(_ result: Result<Reply, any Error>) {
-                let first = settled.withLock { alreadySettled in
-                    defer { alreadySettled = true }
-                    return !alreadySettled
-                }
-                guard first else { return }
-                timeout.withLock { $0?.cancel() }
-                continuation.resume(with: result)
-            }
-            let proxy = connection.remoteObjectProxyWithErrorHandler { error in
-                settle(.failure(ClientError.transport(error.localizedDescription)))
+            let reply = PendingReply(continuation)
+            let proxy = connection.remoteObjectProxyWithErrorHandler { @Sendable error in
+                reply.settle(.failure(ClientError.transport(error.localizedDescription)))
             } as! FanwrightHelperProtocol
-            invoke(proxy) { reply in settle(.success(reply)) }
-            timeout.withLock {
-                $0 = Task {
-                    guard (try? await Task.sleep(for: Self.callTimeout)) != nil else { return }
-                    settle(.failure(ClientError.timedOut))
-                }
-            }
+            invoke(proxy) { value in reply.settle(.success(value)) }
+            reply.startTimeout(Self.callTimeout)
         }
     }
 
@@ -136,5 +121,36 @@ final class HelperClient: FanCommandSink {
     private func invalidateConnection() {
         connection?.invalidate()
         connection = nil
+    }
+}
+
+// XPC replies and errors arrive on arbitrary threads; this box keeps the continuation off the main actor and resumes it once.
+private final class PendingReply<Reply: Sendable>: Sendable {
+    private struct State {
+        var continuation: CheckedContinuation<Reply, any Error>?
+        var timeout: Task<Void, Never>?
+    }
+
+    private let state: Mutex<State>
+
+    init(_ continuation: CheckedContinuation<Reply, any Error>) {
+        state = Mutex(State(continuation: continuation))
+    }
+
+    func startTimeout(_ duration: Duration) {
+        let task = Task { [self] in
+            guard (try? await Task.sleep(for: duration)) != nil else { return }
+            settle(.failure(HelperClient.ClientError.timedOut))
+        }
+        state.withLock { $0.timeout = task }
+    }
+
+    func settle(_ result: Result<Reply, any Error>) {
+        let pending = state.withLock { state in
+            defer { state = State() }
+            return state
+        }
+        pending.timeout?.cancel()
+        pending.continuation?.resume(with: result)
     }
 }
