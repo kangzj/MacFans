@@ -3,7 +3,7 @@ import SwiftUI
 enum SidebarItem: String, CaseIterable, Identifiable {
     case overview, fans, sensors, profiles
 
-    var id: String { rawValue }
+    var id: SidebarItem { self }
 
     var title: String {
         switch self {
