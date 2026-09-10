@@ -1,0 +1,6 @@
+build/
+MacFans.xcodeproj/
+.DS_Store
+xcuserdata/
+.build/
+tasks/
