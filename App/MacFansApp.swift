@@ -11,7 +11,6 @@ struct MacFansApp: App {
                 .environment(appDelegate.model)
         }
         .defaultSize(width: 860, height: 310)
-        .windowResizability(.contentSize)
         .commands { SidebarCommands() }
 
         MenuBarExtra {

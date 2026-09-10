@@ -3,11 +3,13 @@ import SwiftUI
 
 struct OverviewView: View {
     static let trendsExpandedKey = "showOverviewTrends"
+    static let trendHeight: CGFloat = 42
+    private static let collapsedHeight: CGFloat = 332
 
     @Environment(AppModel.self) private var model
 
     static func minimumHeight(trendsExpanded: Bool) -> CGFloat {
-        trendsExpanded ? 372 : 322
+        collapsedHeight + (trendsExpanded ? trendHeight : 0)
     }
 
     var body: some View {

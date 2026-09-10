@@ -58,6 +58,7 @@ struct MainWindow: View {
     @Environment(AppModel.self) private var model
     @State private var selection: SidebarItem = .overview
     @State private var columnVisibility = NavigationSplitViewVisibility.detailOnly
+    @State private var window: NSWindow?
     @AppStorage(OverviewView.trendsExpandedKey) private var trendsExpanded = false
 
     var body: some View {
@@ -87,9 +88,26 @@ struct MainWindow: View {
                 }
             }
         }
-        .frame(minWidth: 800, idealWidth: 860, maxWidth: .infinity, minHeight: OverviewView.minimumHeight(trendsExpanded: trendsExpanded), maxHeight: .infinity)
+        .frame(minWidth: 800, idealWidth: 860, maxWidth: .infinity, minHeight: minimumHeight, maxHeight: .infinity)
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.sidebarSelection, $selection)
+        .background(WindowAccessor { window = $0 })
+        .onChange(of: trendsExpanded) { _, expanded in
+            if selection == .overview, !expanded { shrinkWindow(by: OverviewView.trendHeight) }
+        }
+    }
+
+    private var minimumHeight: CGFloat {
+        selection == .overview ? OverviewView.minimumHeight(trendsExpanded: trendsExpanded) : 320
+    }
+
+    // Growing happens on its own when the minimum height rises; shrinking has to be explicit so the window stays tight.
+    private func shrinkWindow(by height: CGFloat) {
+        guard let window else { return }
+        var frame = window.frame
+        frame.size.height -= height
+        frame.origin.y += height
+        window.setFrame(frame, display: true, animate: true)
     }
 
     @ViewBuilder

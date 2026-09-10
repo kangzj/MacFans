@@ -13,7 +13,7 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var sensorOverrides: [SensorID: SensorOverride] = [:]
     public var pollInterval: TimeInterval = 2
     public var temperatureUnit: TemperatureUnit = .celsius
-    public var menuBarReadout: MenuBarReadout = .cpu
+    public var menuBarReadout: MenuBarReadout = .family(.gpu)
     public var showAllSensors = false
     public var startInModeOnLaunch = false
     public var boostDuration: TimeInterval = 60
@@ -58,7 +58,8 @@ extension AppConfiguration {
         sensorOverrides = try container.decodeIfPresent([SensorID: SensorOverride].self, forKey: .sensorOverrides) ?? defaults.sensorOverrides
         pollInterval = try container.decodeIfPresent(TimeInterval.self, forKey: .pollInterval) ?? defaults.pollInterval
         temperatureUnit = try container.decodeIfPresent(TemperatureUnit.self, forKey: .temperatureUnit) ?? defaults.temperatureUnit
-        menuBarReadout = try container.decodeIfPresent(MenuBarReadout.self, forKey: .menuBarReadout) ?? defaults.menuBarReadout
+        // Older builds stored readout cases that no longer exist; never let that discard the rest of the file.
+        menuBarReadout = (try? container.decodeIfPresent(MenuBarReadout.self, forKey: .menuBarReadout)) ?? nil ?? defaults.menuBarReadout
         showAllSensors = try container.decodeIfPresent(Bool.self, forKey: .showAllSensors) ?? defaults.showAllSensors
         startInModeOnLaunch = try container.decodeIfPresent(Bool.self, forKey: .startInModeOnLaunch) ?? defaults.startInModeOnLaunch
         boostDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .boostDuration) ?? defaults.boostDuration

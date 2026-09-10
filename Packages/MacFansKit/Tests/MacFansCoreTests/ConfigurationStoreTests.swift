@@ -79,4 +79,13 @@ import Testing
         #expect(config.profile(id: id)?.name == Profile.quiet.name)
         #expect(!config.isModifiedBuiltIn(id: id))
     }
+
+    @Test func unknownMenuBarReadoutFallsBackWithoutLosingOtherFields() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try #"{"mode":"constant","menuBarReadout":{"cpu":{}}}"#.write(to: dir.appendingPathComponent("configuration.json"), atomically: true, encoding: .utf8)
+        let config = ConfigurationStore(directory: dir).load()
+        #expect(config.mode == .constant)
+        #expect(config.menuBarReadout == AppConfiguration.default.menuBarReadout)
+    }
 }

@@ -88,14 +88,27 @@ private struct MenuBarSettings: View {
         @Bindable var model = model
         Form {
             Picker("Show next to the icon", selection: $model.configuration.menuBarReadout) {
-                Text("CPU temperature").tag(MenuBarReadout.cpu)
-                ForEach(favorites) { sensor in
-                    Text(sensor.name).tag(MenuBarReadout.sensor(sensor.id))
+                Section("Temperatures") {
+                    ForEach(model.monitor.summaries) { summary in
+                        Text(summary.title).tag(MenuBarReadout.family(summary.family))
+                    }
+                    Text("Hottest sensor").tag(MenuBarReadout.hottest)
                 }
-                ForEach(model.monitor.fans) { fan in
-                    Text("\(fan.name) speed").tag(MenuBarReadout.fanRPM(fan.id))
+                if !favorites.isEmpty {
+                    Section("Favourite sensors") {
+                        ForEach(favorites) { sensor in
+                            Text(sensor.name).tag(MenuBarReadout.sensor(sensor.id))
+                        }
+                    }
                 }
-                Text("Nothing").tag(MenuBarReadout.none)
+                Section("Fans") {
+                    ForEach(model.monitor.fans) { fan in
+                        Text("\(fan.name) speed").tag(MenuBarReadout.fanRPM(fan.id))
+                    }
+                }
+                Section {
+                    Text("Nothing").tag(MenuBarReadout.none)
+                }
             }
             Text("Star sensors in the Sensors tab to offer them here.")
                 .font(.caption)

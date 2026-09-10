@@ -1,5 +1,6 @@
 public enum MenuBarReadout: Codable, Hashable, Sendable {
-    case cpu
+    case family(SensorFamily)
+    case hottest
     case sensor(SensorID)
     case fanRPM(FanID)
     case none
